@@ -1,0 +1,13 @@
+{
+  "name": "personal-plugins",
+  "description": "Andreas's hand-authored Claude Code plugins.",
+  "owner": { "name": "Andreas Heige", "email": "a.heige.83@gmail.com" },
+  "plugins": [
+    {
+      "name": "devsecops-workflow",
+      "source": "./devsecops-workflow",
+      "description": "Dual-loop planning, adversarial implementer/tester testing, mandatory execution verification.",
+      "category": "workflow"
+    }
+  ]
+}
