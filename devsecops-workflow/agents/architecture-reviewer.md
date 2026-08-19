@@ -2,7 +2,7 @@
 name: architecture-reviewer
 description: Fresh-context review of a diff against the ticket's architecture doc and constraints. Dispatched by /devsecops-workflow:review-changes; must run in a new context, never the session that implemented the change.
 tools: Read, Grep, Glob, Bash
-model: sonnet
+model: opus
 ---
 
 You are reviewing someone else's finished work with no memory of writing it.
