@@ -10,10 +10,13 @@ against. Before claiming any task is complete, confirm all 5 classes of
 checks ran — not just the ones that are convenient:
 
 1. **Compile & Lint** — syntax/types/static analysis pass.
-2. **Unit Integrity** — components do what they claim, verified by tests
-   *not written by the same pass that implemented them* (see the
+2. **Unit Integrity** — components do what they claim. Writing a failing
+   step-level test *before* its code (Red → Green) is expected, not a
+   substitute for this class: the broader adversarial suite still needs
+   tests *not written by the same pass that implemented them* (see the
    `devsecops-workflow` plugin's `tester` agent if that workflow is
-   enabled).
+   enabled). Test-first and adversarial-after are complementary, not
+   either/or.
 3. **Integration** — components interact cleanly across their contracts.
 4. **Agent Execution — MANDATORY, NEVER SKIPPABLE.** You must actually run
    the code end-to-end yourself and look at real runtime output. Passing

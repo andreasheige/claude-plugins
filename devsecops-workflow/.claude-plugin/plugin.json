@@ -1,7 +1,7 @@
 {
   "name": "devsecops-workflow",
   "displayName": "DevSecOps Dual-Loop Workflow",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Dual-loop planning (PRD -> architecture -> epic slicing -> ticket implementation), adversarial implementer/tester role separation, and mandatory 5-class execution verification.",
   "author": { "name": "Andreas Heige" },
   "license": "UNLICENSED"
