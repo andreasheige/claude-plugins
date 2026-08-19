@@ -9,10 +9,12 @@ TASK: Create a comprehensive PRD for $ARGUMENTS.
 2. END STATE: A markdown PRD saved at `docs/prd/$ARGUMENTS.md` covering
    scope, non-goals, objectives, and success metrics.
 3. VALIDATION PLAN:
-   - Level 1 (Lint): Markdown is well-formed, headings present.
-   - Level 4 (Agent Execution — mandatory): Re-read the written file back and
-     confirm every required section (Scope, Non-Goals, Success Metrics) is
-     present and non-empty.
+   - Level 1 (Lint): Run `scripts/check-doc-structure.sh prd <file>` (from
+     this plugin) — deterministic check that Scope, Non-Goals, and Success
+     Metrics are all present and non-empty. Fix and re-run on failure; don't
+     eyeball the file instead of running it.
+   - Level 4 (Agent Execution — mandatory): Confirm the script actually ran
+     and printed `PASS` — a script you didn't execute proves nothing.
 4. GO:
    - Surface open questions and ambiguities before writing (think before
      coding) — ask rather than assume.
