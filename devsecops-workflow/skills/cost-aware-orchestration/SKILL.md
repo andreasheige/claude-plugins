@@ -7,6 +7,8 @@ description: Use this skill whenever acting as the leader/orchestrator dispatchi
 
 When you're the leader — planning work and dispatching subagents (Task tool, Agent tool, or a Workflow's `agent()` calls) — don't let every subagent default to whatever model you're running as. Each dispatch is an explicit choice; make it a cost-aware one.
 
+Scope: this governs dispatches only. The main session's model (currently `opus[1m]` in `~/.claude/settings.json`) is the user's explicit choice — don't second-guess it; the tiers below are for what that session sends out.
+
 ## The real numbers (Anthropic API, per MTok, current-gen — platform.claude.com/docs/en/about-claude/pricing)
 
 | Tier | Model | Input | Output | Relative cost |
