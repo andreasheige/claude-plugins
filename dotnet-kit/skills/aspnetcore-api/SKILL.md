@@ -59,8 +59,11 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 ```
 
 Then `app.UseExceptionHandler();` and `app.UseStatusCodePages();`.
-**.NET 10 change:** when `TryHandleAsync` returns `true`, the middleware no longer logs the
-exception. Log it yourself:
+**.NET 10 change:** when `TryHandleAsync` returns `true`, the middleware no longer records
+diagnostics: no log entry, no EventSource event, no `error.type` tag on
+`http.server.request.duration`. Log the exception yourself, as below, or bring back the
+old behaviour with
+`app.UseExceptionHandler(new ExceptionHandlerOptions { SuppressDiagnosticsCallback = _ => false })`.
 
 ```csharp
 public async ValueTask<bool> TryHandleAsync(
@@ -87,7 +90,8 @@ keep it only where the repo already uses it.
 
 ## Configuration
 Later sources override earlier ones: `appsettings.json` < `appsettings.{Environment}.json` <
-user secrets (Development only) < environment variables < command-line arguments.
+user secrets (Development only) < environment variables (those without an `ASPNETCORE_`/`DOTNET_`
+prefix) < command-line arguments.
 Nested keys in environment variables use `__` (`Catalog__BaseAddress`).
 Bind and validate options at startup:
 
@@ -115,7 +119,8 @@ services.AddAuthorization();
 ```
 
 .NET 10: cookie authentication now answers known API endpoints with 401/403 instead of
-redirecting to a login page.
+redirecting to a login page. "Known API endpoints" are those that read or write JSON,
+return `TypedResults`, or are `[ApiController]`/SignalR endpoints.
 
 ## HttpClient
 Never `new HttpClient()` per call. Pick one approach:

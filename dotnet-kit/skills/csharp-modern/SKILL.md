@@ -99,7 +99,9 @@ That throws when the expression is compiled with interpretation. Fix it with
 - `System.Threading.Lock` type; `lock (_gate)` on a `Lock` uses its fast scope API.
 - `\e` escape character.
 - Implicit index `^` in object initializers.
-- `ref` locals and `unsafe` blocks in iterators and async methods; `ref struct` can implement interfaces; `allows ref struct` generic anti-constraint.
+- `ref` and `ref struct` locals in async methods and iterators (not live across `await`/`yield`);
+  `unsafe` contexts in iterators (the `yield` statements themselves stay safe).
+- `ref struct` types can implement interfaces; the `allows ref struct` generic anti-constraint.
 - Partial properties and indexers.
 - `[OverloadResolutionPriority]` for library authors.
 - Better natural type for method groups.

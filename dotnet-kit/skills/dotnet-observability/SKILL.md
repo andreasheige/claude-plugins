@@ -39,7 +39,8 @@ finally
 }
 ```
 
-`HostAbortedException` is thrown on purpose by `dotnet ef` tooling; don't log it as fatal.
+`HostAbortedException` signals a deliberate host abort, e.g. from `dotnet ef` or other tools
+that build the host and then stop it. Don't log it as fatal.
 Serilog replaces the `ILogger` providers, so logs reach OTLP through
 `Serilog.Sinks.OpenTelemetry`, not through OpenTelemetry's logging provider. Pick one log
 pipeline; two would send every line twice.
@@ -69,13 +70,16 @@ services.AddOpenTelemetry()
 - `OpenTelemetry.Instrumentation.EntityFrameworkCore` is **prerelease** (`-beta`). Its span
   attributes can change between versions; pin the version and check the changelog when upgrading.
 - `UseOtlpExporter()` configures every signal at once. Don't also call `AddOtlpExporter()` per signal.
-- .NET 10: `ActivitySource.StartActivity` sampling behaviour changed, and the default
-  propagator is now W3C. See the core-libraries breaking changes if you have custom sampling.
+- .NET 10: the default propagator is now W3C. It sends `baggage` instead of
+  `Correlation-Context`; `DistributedContextPropagator.CreatePreW3CPropagator()` restores
+  the old one.
+- .NET 10 also has a narrow sampling change: `PropagationData` with a recorded parent no
+  longer sets `Recorded`. The OTel parent-based sampler is unaffected.
 
 ## Semantic-convention names (stable HTTP conventions)
 Metrics: `http.server.request.duration`, `http.client.request.duration` (seconds).
-Attributes: `http.request.method`, `http.response.status_code`, `http.route`, `url.path`,
-`url.scheme`, `server.address`, `error.type`. The old names (`http.method`,
+Metric attributes: `http.request.method`, `http.response.status_code`, `http.route` (server),
+`url.scheme`, `server.address`, `error.type`. `url.path` exists on spans only, not on metrics. The old names (`http.method`,
 `http.status_code`, `http.url`) are obsolete; don't use them in queries or dashboards.
 
 ## Structured logging

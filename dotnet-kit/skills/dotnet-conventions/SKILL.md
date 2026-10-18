@@ -35,7 +35,8 @@ Existing repo conventions win over everything in this kit. Read neighbouring cod
     `dotnet test --project X.csproj` / `--solution X.slnx`, and test-app options go
     straight on the command line (xUnit v3: `--filter-class`, `--filter-trait`).
   - Otherwise VSTest mode: `dotnet test X.sln --filter "FullyQualifiedName~Foo"`.
-    For MTP-based test projects in this mode, put MTP options after `--`.
+    MTP test projects in this mode need `TestingPlatformDotnetTestSupport=true`, and MTP
+    options go after `--`. Prefer switching to MTP mode in global.json.
 - **L4** Run it: `dotnet run --project <app>`, then call the endpoint (curl) or read
   the console output. A green test run is not L4.
 - **L5** `dotnet package list --vulnerable --include-transitive`

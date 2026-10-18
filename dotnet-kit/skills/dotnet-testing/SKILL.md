@@ -14,6 +14,9 @@ Don't introduce a new one; see `../dotnet-conventions/references/licensing.md` f
   `dotnet test --project tests/X.Tests.csproj`, `dotnet test --solution X.slnx`,
   options go straight through, e.g. `--filter-class`, `--filter-not-trait "Category=Docker"`.
 - Otherwise VSTest mode: `dotnet test X.sln --filter "Category!=Docker"`.
+  Caveat: `xunit.v3` 4.x uses MTP v2, and the old MTP-through-VSTest bridge does not
+  work with MTP v2 on the .NET 10 SDK. If `dotnet test` reports a compatibility error,
+  add the `global.json` runner setting above.
 - xUnit v3 test projects are executables (`<OutputType>Exe</OutputType>`) and can also
   be run directly with `dotnet run --project tests/X.Tests`.
 
@@ -73,10 +76,13 @@ public sealed class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 ## Databases: Testcontainers, not EF InMemory
 - Default: the real engine in a container (Testcontainers). Builders take the image in
   the constructor (`new PostgreSqlBuilder("postgres:17-alpine")`); pin the tag.
-- SQLite in-memory (`Data Source=:memory:` on a connection kept open) is fine for fast
-  tests of LINQ shape and EF mapping. It is not your production engine.
-- Don't use `UseInMemoryDatabase` to test queries: it isn't relational, skips constraints
-  and translates nothing. Microsoft's own testing guidance advises against it.
+- SQLite in-memory (`Data Source=:memory:` on a connection kept open) is a last-resort
+  fake. The EF docs prefer the real engine, then a repository layer. SQLite differs from
+  production in case sensitivity, translation and raw SQL, so a test can pass on SQLite
+  and fail in production.
+- Don't use `UseInMemoryDatabase` to test queries. It isn't relational: it ignores
+  transactions, rejects raw SQL, and evaluates LINQ in memory instead of translating it.
+  The EF docs call it "highly discouraged".
 
 ```csharp
 public sealed class PostgresFixture : IAsyncLifetime

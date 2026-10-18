@@ -79,12 +79,15 @@ todo.ComplexProperty(t => t.Details, details => details.ToJson());
 SQL Server uses the native `json` type with `UseAzureSql` or compatibility level 170+.
 Existing `nvarchar(max)` JSON columns are then altered by the next migration
 (see `../dotnet-conventions/references/breaking-changes-10.md`).
+Limits: an optional complex type needs at least one required property, and collections
+of struct complex types are not supported.
 
 ## Raw SQL
 - `FromSql($"... {value}")` returns **entity types**; interpolated values become parameters.
   You can compose LINQ on top of it, and query filters apply.
-- `Database.SqlQuery<T>($"...")` returns **scalars or unmapped types**. For scalars,
-  name the column `Value`. Entity query filters do not apply.
+- `Database.SqlQuery<T>($"...")` returns **scalars or unmapped types**. For scalars, name
+  the column `Value` if you compose LINQ on top of it (`.Where`, `.OrderBy`). Entity query
+  filters do not apply; `verify/` tests show deleted rows are returned.
 - `FromSqlRaw`/`ExecuteSqlRaw` take a plain string. Never concatenate input into it;
   EF 10 warns about concatenation inside these calls.
 
@@ -107,7 +110,11 @@ db.Database
   `EF.Constant` / `EF.Parameter`.
 - SQL parameter names are simpler (`@city`, not `@__city_0`). Snapshot tests of SQL text will change.
 - Projects with `<TargetFrameworks>`: `dotnet ef ... --framework net10.0` is required.
-- Microsoft.Data.Sqlite 10: date/time values without an offset are now read as UTC.
+- Microsoft.Data.Sqlite 10 (high impact), each converting to UTC:
+  - `GetDateTimeOffset` on a value without an offset assumes UTC.
+  - `GetDateTime` on a value with an offset returns UTC.
+  - A `DateTimeOffset` written to a REAL column is converted to UTC.
+  - Revert with the AppContext switch `Microsoft.Data.Sqlite.Pre10TimeZoneHandling`.
 
 ## Migrations (ask before running against a shared database)
 `dotnet ef migrations add <Name>`; review the generated code. Ship it with

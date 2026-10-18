@@ -18,11 +18,15 @@ approach. Infra and deployment changes are ask-first.
   lack ICU and tzdata. They need `<InvariantGlobalization>true</InvariantGlobalization>`.
   If you need cultures or time zones, use `10.0-noble-chiseled-extra`.
 
-## Preferred: SDK container publish (no Dockerfile, no Docker needed to build)
+## Preferred: SDK container publish (no Dockerfile)
 
 ```bash
 dotnet publish --os linux --arch x64 -t:PublishContainer
 ```
+
+This plain command pushes to the local Docker/Podman daemon and fails without one
+(MSB4018 `CreateNewImage`). With no daemon, add `-p ContainerArchiveOutputPath=...` or
+`-p ContainerRegistry=...`.
 
 Useful properties (csproj or `-p:`):
 
