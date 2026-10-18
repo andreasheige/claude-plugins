@@ -1,0 +1,8 @@
+{
+  "name": "dotnet-kit",
+  "displayName": ".NET Kit",
+  "version": "0.1.0",
+  "description": "Path-scoped .NET 10 / C# 14 knowledge: repo-conventions-first rules and compile-verified skills for modern C#, ASP.NET Core, EF Core, testing, observability and containers.",
+  "author": { "name": "Andreas Heige" },
+  "license": "UNLICENSED"
+}

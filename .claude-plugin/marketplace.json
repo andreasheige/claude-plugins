@@ -8,6 +8,12 @@
       "source": "./devsecops-workflow",
       "description": "Dual-loop planning, adversarial implementer/tester testing, mandatory execution verification.",
       "category": "workflow"
+    },
+    {
+      "name": "dotnet-kit",
+      "source": "./dotnet-kit",
+      "description": "Path-scoped .NET 10 / C# 14 conventions and compile-verified knowledge skills. Existing repo conventions win.",
+      "category": "development"
     }
   ]
 }
