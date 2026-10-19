@@ -16,7 +16,9 @@ checks ran — not just the ones that are convenient:
    tests *not written by the same pass that implemented them* (see the
    `devsecops-workflow` plugin's `tester` agent if that workflow is
    enabled). Test-first and adversarial-after are complementary, not
-   either/or.
+   either/or. Every new test is mutation-checked by hand: break the code
+   the way the test guards against and see that test fail, then revert.
+   A test that stays green under its own bug doesn't count as coverage.
 3. **Integration** — components interact cleanly across their contracts.
 4. **Agent Execution — MANDATORY, NEVER SKIPPABLE.** You must actually run
    the code end-to-end yourself and look at real runtime output. Passing

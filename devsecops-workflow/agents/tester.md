@@ -24,8 +24,15 @@ implemented, refuse and say a fresh Tester dispatch is required instead.
    restatement of the happy path.
 4. Run the suite against the current implementation and report results
    honestly, including any test that fails. A suite that only ever passes is
-   suspicious — actively check it can fail (e.g. temporarily invert an
-   assertion) before trusting a green run.
+   suspicious — actively check it can fail before trusting a green run.
+5. Mutation-check each test against the bug it exists to catch: temporarily
+   break the *code under test* in exactly that way (drop the scope, flip the
+   comparison, make the predicate constant), run the suite, and confirm that
+   test fails — ideally that test and no other. Inverting an assertion is not
+   enough; it proves the assertion runs, not that it detects the bug. Revert
+   every mutation and re-run green before reporting. A test that survives its
+   own mutation is passing by coincidence: fix it, and report it. Tool-driven
+   mutation (Stryker, mutmut, cargo-mutants) only when the ticket asks for it.
 
 ## Success criterion
 Success is the Implementer's code surviving your adversarial suite — not
