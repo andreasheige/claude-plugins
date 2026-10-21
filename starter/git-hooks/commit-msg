@@ -1,0 +1,41 @@
+#!/bin/bash
+# Global commit-msg hook — enforces Conventional Commits on the subject line.
+# Wired in via `git config --global core.hooksPath <this folder>`,
+# so this runs for every commit, in every repo, on this machine.
+#
+# Escape hatch: `git commit --no-verify` skips this, same as any git hook —
+# that's git's normal, expected behavior, not a gap to close.
+set -euo pipefail
+
+# Run the repo's own .git/hooks/commit-msg first; git skips it under a global
+# core.hooksPath. See _run-local.sh.
+. "$(dirname "$0")/_run-local.sh"
+run_local_hook commit-msg "$@" || exit $?
+
+msg_file="$1"
+subject="$(head -n1 "$msg_file")"
+
+types='feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert'
+pattern="^(${types})(\([a-z0-9-]+\))?!?: .+"
+
+if [[ "$subject" =~ $pattern ]]; then
+  exit 0
+fi
+
+cat >&2 <<EOF
+✘ Commit message doesn't follow Conventional Commits format.
+
+  Got:      "$subject"
+  Expected: <type>(<optional-scope>): <description>
+
+  Allowed types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+  Optional "!" before ":" marks a breaking change (e.g. "feat!: ...").
+
+  Examples:
+    feat: add login flow
+    fix(parser): handle empty input
+    chore!: drop support for node 16
+
+  To bypass intentionally: git commit --no-verify
+EOF
+exit 1

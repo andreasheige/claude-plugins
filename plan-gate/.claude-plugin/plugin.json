@@ -1,0 +1,10 @@
+{
+  "name": "plan-gate",
+  "displayName": "Plan Gate",
+  "version": "1.0.0",
+  "description": "/plan-gate <plan.md> arms a Stop hook that keeps Claude working through a markdown checklist until every item is ticked or a BLOCKED: line is written.",
+  "author": {
+    "name": "Andreas Heige"
+  },
+  "license": "MIT"
+}

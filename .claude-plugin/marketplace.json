@@ -1,8 +1,23 @@
 {
   "name": "personal-plugins",
-  "description": "Andreas's hand-authored Claude Code plugins.",
-  "owner": { "name": "Andreas Heige", "email": "a.heige.83@gmail.com" },
+  "description": "Hand-authored Claude Code plugins: guardrails, a plan gate, a dual-loop DevSecOps workflow and .NET knowledge.",
+  "owner": {
+    "name": "Andreas Heige",
+    "email": "a.heige.83@gmail.com"
+  },
   "plugins": [
+    {
+      "name": "guardrails",
+      "source": "./guardrails",
+      "description": "Guardrail hooks: destructive commands, force-push/merge, infra destroy, credential reads, secrets in rc files, plus a canary that warns when the guardrail is silently broken.",
+      "category": "security"
+    },
+    {
+      "name": "plan-gate",
+      "source": "./plan-gate",
+      "description": "/plan-gate <plan.md>: a Stop hook that keeps Claude working through a checklist until done or BLOCKED.",
+      "category": "workflow"
+    },
     {
       "name": "devsecops-workflow",
       "source": "./devsecops-workflow",
