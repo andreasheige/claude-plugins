@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(az group delete:*)",
+      "Bash(az resource delete:*)",
+      "Bash(az vm delete:*)",
+      "Bash(az disk delete:*)",
+      "Bash(az webapp delete:*)",
+      "Bash(az functionapp delete:*)",
+      "Bash(az aks delete:*)",
+      "Bash(az acr delete:*)",
+      "Bash(az keyvault delete:*)",
+      "Bash(az keyvault purge:*)",
+      "Bash(az storage account delete:*)",
+      "Bash(az sql server delete:*)",
+      "Bash(az sql db delete:*)",
+      "Bash(az network vnet delete:*)",
+      "Bash(az network nsg delete:*)",
+      "Bash(az deployment group delete:*)",
+      "Bash(az deployment sub delete:*)"
+    ]
+  }
+}

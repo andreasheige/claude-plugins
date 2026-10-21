@@ -1,0 +1,25 @@
+#!/bin/bash
+# Global pre-merge-commit hook — this machine's policy is "never merge,
+# always rebase". This hook fires for any `git merge` that would create a
+# merge commit (i.e. any non-fast-forward merge) and rejects it outright.
+#
+# Known gap: a fast-forward merge creates no commit, so this hook never
+# fires for it — git has no hook that intercepts "git merge" itself,
+# only ones tied to the resulting commit. That gap is accepted, not hidden;
+# the guardrails plugin's guardrail.sh blocks the `git merge` command outright
+# for Claude Code, ff-or-not.
+set -euo pipefail
+
+cat >&2 <<'EOF'
+✘ Merge commits are not allowed on this machine — policy is rebase-only.
+
+  Instead of merging, update your branch with:
+    git fetch && git rebase origin/main
+  (or whatever the target branch is), resolve any conflicts during the
+  rebase, then push with:
+    git push --force-with-lease
+
+  If you specifically need a merge for some unusual reason, bypass with
+  `git merge --no-verify` (only if you're sure).
+EOF
+exit 1

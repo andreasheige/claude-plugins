@@ -1,0 +1,10 @@
+{
+  "name": "guardrails",
+  "displayName": "Guardrails",
+  "version": "1.0.0",
+  "description": "PreToolUse guardrail (destructive commands, force-push/merge, infra destroy, credential reads), secret-placement guard for shell rc files, a SessionStart canary that warns when the guardrail is silently broken, and a frontmatter check for skills/commands/agents.",
+  "author": {
+    "name": "Andreas Heige"
+  },
+  "license": "MIT"
+}

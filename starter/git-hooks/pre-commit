@@ -1,0 +1,81 @@
+#!/bin/bash
+# Global pre-commit hook — refuse to commit a credential in a dotfile or .env.
+# Wired in via `git config --global core.hooksPath <this folder>`,
+# so this runs for every commit, in every repo, on this machine.
+#
+# This is the agent-agnostic layer: Claude Code and Codex CLI are blocked at
+# PreToolUse by the guardrails plugin's secret-placement.sh, but Copilot CLI's
+# hook only audits after the write (postToolUse), so it cannot block. Whatever
+# wrote the file, it stops here before it lands.
+#
+# Detection patterns are NOT duplicated — this delegates to the same script the
+# agent hooks use, via its --scan mode, so there is one source of truth.
+#
+# Scope is deliberately narrow (shell rc files, dotfiles and .env), matching the
+# agent-hook policy. It is not a repo-wide secret scanner; it will not flag a
+# token in application source or a test fixture.
+#
+# Escape hatch: `git commit --no-verify` skips this, same as any git hook —
+# that's git's normal, expected behavior, not a gap to close.
+set -uo pipefail
+
+# Run the repo's own .git/hooks/pre-commit first; git skips it under a global
+# core.hooksPath. See _run-local.sh.
+. "$(dirname "$0")/_run-local.sh"
+run_local_hook pre-commit "$@" || exit $?
+
+# Point SECRET_SCANNER at guardrails/scripts/secret-placement.sh from this repo.
+SCANNER="${SECRET_SCANNER:-$HOME/.agent-global/hooks/secret-placement.sh}"
+
+if [ ! -r "$SCANNER" ]; then
+  # Warn loudly but allow: a missing scanner must not block every commit on
+  # this machine. Same fail-open philosophy as hooks/guardrail.sh.
+  echo "⚠ pre-commit: $SCANNER is missing — secret placement check SKIPPED." >&2
+  exit 0
+fi
+
+# Staged files worth checking: shell rc files, shell dotfiles, and .env —
+# excluding the sanctioned *.local destinations and .env examples/templates.
+# NOTE: macOS ships bash 3.2, so no mapfile/readarray here.
+files="$(
+  git diff --cached --name-only --diff-filter=ACM \
+    | grep -E '(^|/)(\.zshrc|\.zprofile|\.zshenv|\.zlogin|\.bashrc|\.bash_profile|\.profile|\.env)([^.]|$)|(^|/)\.[^/]*\.(sh|zsh)$' \
+    | grep -vE '\.local$|\.env\.(example|sample|template|dist)$'
+)"
+
+[ -z "$files" ] && exit 0
+
+report="$(
+  printf '%s\n' "$files" | while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    # Check the STAGED content, not the working tree — they can differ.
+    hits="$(git show ":$f" 2>/dev/null | bash "$SCANNER" --scan)"
+    [ -z "$hits" ] && continue
+    printf '%s\n' "$hits" | while IFS="$(printf '\t')" read -r ln name len; do
+      [ -n "${name:-}" ] || continue
+      printf '    %s:%s  %s  [value redacted, %s chars]\n' "$f" "$ln" "$name" "$len"
+    done
+  done
+)"
+
+[ -z "$report" ] && exit 0
+
+cat >&2 <<EOF
+✘ Refusing to commit: a credential is assigned in a dotfile.
+
+$report
+
+  Secrets do not belong in version-controlled shell config. Move the real
+  value into ~/.zshrc.local (chmod 600, gitignored); .zshrc sources it at
+  the end via:
+
+    [ -f ~/.zshrc.local ] && source ~/.zshrc.local
+
+  Then leave the committed file with an empty value or no line at all.
+  Values were not printed above.
+
+  Already pushed? Rotate the credential — removing the line is not enough.
+
+  To bypass intentionally: git commit --no-verify
+EOF
+exit 1

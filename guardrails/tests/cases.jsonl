@@ -1,0 +1,14 @@
+{"expect":"deny","name":"Read an SSH private key","hook":"guardrail.sh","payload":{"tool_name":"Read","tool_input":{"file_path":"~/.ssh/id_rsa"}}}
+{"expect":"deny","name":"rm -rf","hook":"guardrail.sh","payload":{"tool_name":"Bash","tool_input":{"command":"rm -rf build"}}}
+{"expect":"deny","name":"git merge","hook":"guardrail.sh","payload":{"tool_name":"Bash","tool_input":{"command":"git merge main"}}}
+{"expect":"deny","name":"plain force-push","hook":"guardrail.sh","payload":{"tool_name":"Bash","tool_input":{"command":"git push --force origin feat/x"}}}
+{"expect":"deny","name":"terraform destroy","hook":"guardrail.sh","payload":{"tool_name":"Bash","tool_input":{"command":"terraform destroy -auto-approve"}}}
+{"expect":"deny","name":"cat a .env file","hook":"guardrail.sh","payload":{"tool_name":"Bash","tool_input":{"command":"cat .env"}}}
+{"expect":"allow","name":"ls","hook":"guardrail.sh","payload":{"tool_name":"Bash","tool_input":{"command":"ls -la"}}}
+{"expect":"allow","name":"git rebase","hook":"guardrail.sh","payload":{"tool_name":"Bash","tool_input":{"command":"git rebase origin/main"}}}
+{"expect":"allow","name":"force-with-lease on a feature branch","hook":"guardrail.sh","payload":{"tool_name":"Bash","tool_input":{"command":"git push --force-with-lease origin feat/x"}}}
+{"expect":"allow","name":"cat .env.example","hook":"guardrail.sh","payload":{"tool_name":"Bash","tool_input":{"command":"cat .env.example"}}}
+{"expect":"allow","name":"Read a source file","hook":"guardrail.sh","payload":{"tool_name":"Read","tool_input":{"file_path":"src/app.ts"}}}
+{"expect":"deny","name":"secret written into .zshrc","hook":"secret-placement.sh","payload":{"tool_name":"Write","tool_input":{"file_path":"~/.zshrc","content":"export EXAMPLE_API_KEY=FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE1234\n"}}}
+{"expect":"allow","name":"empty placeholder in .zshrc","hook":"secret-placement.sh","payload":{"tool_name":"Write","tool_input":{"file_path":"~/.zshrc","content":"export EXAMPLE_API_KEY=\"\"\n"}}}
+{"expect":"allow","name":"secret in an untracked .zshrc.local","hook":"secret-placement.sh","payload":{"tool_name":"Write","tool_input":{"file_path":"~/.zshrc.local","content":"export EXAMPLE_API_KEY=FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE1234\n"}}}
