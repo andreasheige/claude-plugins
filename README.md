@@ -11,6 +11,7 @@ The tour of how it all fits together is in [the gist](https://gist.github.com/an
 | [`guardrails/`](guardrails) | plugin | PreToolUse guardrail (destructive commands, `git merge`/force-push/`reset --hard`, infra destroy, credential reads), secrets-in-rc-files guard, a SessionStart canary that warns when the guardrail is silently broken, and a frontmatter check for skills/commands/agents |
 | [`plan-gate/`](plan-gate) | plugin | `/plan-gate <plan.md>` arms a Stop hook that keeps Claude working through a checklist until every item is ticked or a `BLOCKED:` line is written |
 | [`devsecops-workflow/`](devsecops-workflow) | plugin | PRD → architecture → tickets; per ticket: prime → plan → implement → validate (5 levels, real execution mandatory) → fresh-context review → land. Adversarial tester, security and architecture reviewers. Also `dogma`, `cost-aware-orchestration`, `verify-before-done`, `git-workflow` |
+| [`review-loop/`](review-loop) | plugin | Harness-neutral review CLI: `scan` a diff for secrets, hidden Unicode and new dependencies (pinned scanners, fails closed); `worker` runs a read-only model finder/verifier in a stripped scratch worktree |
 | [`dotnet-kit/`](dotnet-kit) | plugin | Path-scoped .NET / C# skills; every code sample is compile-verified (`dotnet-kit/verify/verify.sh`) |
 | [`starter/CLAUDE.md`](starter/CLAUDE.md) | template | Operating principles, security posture, session hygiene |
 | [`starter/settings/`](starter/settings) | template | `permissions.deny` — core rules, and an optional Azure set |

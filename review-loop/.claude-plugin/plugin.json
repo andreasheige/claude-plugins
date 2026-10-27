@@ -1,0 +1,10 @@
+{
+  "name": "review-loop",
+  "displayName": "Review Loop",
+  "version": "0.1.0",
+  "description": "Harness-neutral review CLI: deterministic diff scan (secrets, hidden Unicode, new dependencies) and read-only model finder/verifier workers in a stripped scratch worktree.",
+  "author": {
+    "name": "Andreas Heige"
+  },
+  "license": "MIT"
+}

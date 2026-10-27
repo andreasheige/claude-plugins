@@ -29,6 +29,12 @@
       "source": "./dotnet-kit",
       "description": "Path-scoped .NET 10 / C# 14 conventions and compile-verified knowledge skills. Existing repo conventions win.",
       "category": "development"
+    },
+    {
+      "name": "review-loop",
+      "source": "./review-loop",
+      "description": "Harness-neutral review CLI: diff scan for secrets, hidden Unicode and new dependencies, plus read-only model finder/verifier workers in a stripped scratch worktree.",
+      "category": "security"
     }
   ]
 }
