@@ -24,11 +24,12 @@ TASK: Execute a full validation sweep for $ARGUMENTS.
      inspect real runtime output. A green test suite alone does not satisfy
      this level — you must observe the feature working, or the bug
      reproduced-then-fixed, with your own eyes on real output.
-   - **Level 5 (Stack-Specific incl. Security):** dispatch the
-     `security-reviewer` subagent (Task tool, agent type
-     `devsecops-workflow:security-reviewer`) for a dedicated security pass
-     (secrets, injection, authz, dependency risk) plus any relevant
-     E2E/perf checks for this stack.
+   - **Level 5 (Stack-Specific incl. Security):** run any relevant E2E/perf
+     checks for this stack. The security pass runs after commit, in
+     `/devsecops-workflow:eot` (the review-loop CLI). Only when that CLI is
+     absent, dispatch the `security-reviewer` subagent here (Task tool,
+     agent type `devsecops-workflow:security-reviewer`) for secrets,
+     injection, authz and dependency risk.
    - Report pass/fail per level. Any failure at any level blocks moving to
      `/devsecops-workflow:review-changes` — fix and re-run from the failing
      level.
