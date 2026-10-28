@@ -5,7 +5,8 @@ argument-hint: "[ticket-path]"
 TASK: Land $ARGUMENTS.
 
 1. PRIMING: Confirm the current branch is a feature branch (not `main`/`master`)
-   and that `/devsecops-workflow:validate` has already passed for this ticket.
+   and that `/devsecops-workflow:validate` and `/devsecops-workflow:eot` have
+   already passed for this ticket.
 2. END STATE: The feature branch is rebased onto the latest `main`, re-validated,
    pushed, a PR is open, and it is landed via rebase-merge — no merge commit
    anywhere in the history.
@@ -19,6 +20,11 @@ TASK: Land $ARGUMENTS.
      Resolve conflicts as part of the rebase.
    - Re-run `/devsecops-workflow:validate` — a rebase can change behavior;
      don't skip re-validation because it "already passed" before the rebase.
+   - `review-loop recheck --ticket <ticket-path> --format text` (skip only if
+     `/devsecops-workflow:eot` used the `security-reviewer` fallback). If the
+     rebase left the patch-id unchanged it reports the last outcome without
+     running a model; otherwise it reviews what the rebase changed. Push only
+     on exit 0; on 1–3 follow `/devsecops-workflow:eot`.
    - Push the branch: `git push` if this is its first push, otherwise
      `git push --force-with-lease` (required after a rebase rewrites commits
      already on the remote). Never push to `main`/`master` directly.
