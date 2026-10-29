@@ -29,7 +29,8 @@ TASK: Execute a full validation sweep for $ARGUMENTS.
      `/devsecops-workflow:eot` (the review-loop CLI). Only when that CLI is
      absent, dispatch the `security-reviewer` subagent here (Task tool,
      agent type `devsecops-workflow:security-reviewer`) for secrets,
-     injection, authz and dependency risk.
+     injection, authz and dependency risk, with the diff pasted into its
+     prompt (it has no shell).
    - Report pass/fail per level. Any failure at any level blocks moving to
      `/devsecops-workflow:review-changes` — fix and re-run from the failing
      level.
