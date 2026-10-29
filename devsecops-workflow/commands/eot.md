@@ -9,7 +9,8 @@ TASK: Run the end-of-ticket review for $ARGUMENTS.
    Find the CLI: `$REVIEW_LOOP_BIN`, else `review-loop` on `PATH`, else
    `~/Dev/review-loop/bin/review-loop`. If none is executable, say so and
    dispatch the `security-reviewer` subagent (Task tool, agent type
-   `devsecops-workflow:security-reviewer`) on the ticket's diff instead —
+   `devsecops-workflow:security-reviewer`) instead, with the output of
+   `git diff <base>...HEAD` pasted into its prompt (it has no shell) —
    that is the only case it runs.
 2. END STATE: The latest review-loop record for this branch exits 0, or the
    user has decided on every open finding.
