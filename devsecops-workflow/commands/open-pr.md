@@ -1,19 +1,19 @@
 ---
-description: Land a ticket's feature branch — rebase onto latest main, re-validate, push, open the PR, and land it via rebase-merge.
+description: Hand a ticket's feature branch over for landing — rebase onto latest main, re-validate, push, and open the PR. The user merges.
 argument-hint: "[ticket-path]"
 ---
-TASK: Land $ARGUMENTS.
+TASK: Open the PR for $ARGUMENTS.
 
 1. PRIMING: Confirm the current branch is a feature branch (not `main`/`master`)
    and that `/devsecops-workflow:validate` and `/devsecops-workflow:eot` have
    already passed for this ticket.
 2. END STATE: The feature branch is rebased onto the latest `main`, re-validated,
-   pushed, a PR is open, and it is landed via rebase-merge — no merge commit
-   anywhere in the history.
+   pushed, and a PR is open. Stop there: merging is the user's (the guard
+   denies `gh pr merge` and every other merge or approve path for agents).
 3. VALIDATION PLAN:
-   - Level 4 (Agent Execution — mandatory): after landing, confirm `main`'s
-     history is linear for this change (`git log --graph` shows no merge
-     commit for it).
+   - Level 4 (Agent Execution — mandatory): `gh pr view --json url,state,mergeable`
+     shows the PR open and mergeable; the branch has no merge commit
+     (`git log --graph origin/main..HEAD`).
 4. GO, in order — never substitute `git merge` or a squash/merge PR landing
    for any of these steps:
    - `git fetch && git rebase origin/main` — never `git merge origin/main`.
@@ -30,6 +30,6 @@ TASK: Land $ARGUMENTS.
      already on the remote). Never push to `main`/`master` directly.
    - `gh pr create` with a title matching the Conventional Commits format
      (see the `git-workflow` skill) and a body summarizing the change.
-   - Land with `gh pr merge --rebase` — never bare `gh pr merge`, never
-     `--squash`. If the repo doesn't allow rebase-merging, stop and tell the
-     user rather than falling back to a different merge strategy.
+   - Stop and give the user the PR link. They land it with rebase-merge
+     (`gh pr merge --rebase`); never merge, approve or enable auto-merge
+     yourself.
