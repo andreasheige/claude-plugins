@@ -31,7 +31,7 @@ git push --force-with-lease
 `--force-with-lease` is allowed on feature branches (guardrail.sh permits it) but hard-denied on `main`/`master` in any form — rebase workflows never need it there anyway, since `main` should only move forward via landed PRs.
 
 ## Landing a PR
-Agents stop at the open PR: merging, approving and auto-merge are the user's, and the guard denies them for agents. The user lands with `gh pr merge --rebase` — never the bare `gh pr merge` (which falls back to whatever the repo's default is, possibly a merge commit or squash) and never `--squash`. See the `/devsecops-workflow:open-pr` command for the rebase → validate → push → PR sequence. Note: the target GitHub repo must have "Allow rebase merging" enabled in its settings for this to succeed — that's a per-repo setting, not something this workflow controls.
+Agents land only a risk:low PR, through `review-loop land <pr>` (it recomputes the tier from the PR head and merges with `--rebase --match-head-commit`). Everything else stops at the open PR: merging, approving and auto-merge are the user's, and the guard denies them for agents. The user lands with `gh pr merge --rebase` — never the bare `gh pr merge` (which falls back to whatever the repo's default is, possibly a merge commit or squash) and never `--squash`. See the `/devsecops-workflow:open-pr` command for the rebase → validate → push → PR sequence. Note: the target GitHub repo must have "Allow rebase merging" enabled in its settings for this to succeed — that's a per-repo setting, not something this workflow controls.
 
 ## Quick reference — what's blocked vs. required
 | Action | Status |
@@ -42,5 +42,6 @@ Agents stop at the open PR: merging, approving and auto-merge are the user's, an
 | `git push --force-with-lease` on a feature branch | Allowed — required after rebasing an already-pushed branch |
 | Direct `git push` to `main`/`master` | Blocked — use a PR |
 | Non-conventional commit message | Rejected by the `commit-msg` hook |
+| `review-loop land <pr>` (agent) | Allowed — merges only a risk:low, reviewed, green PR |
 | `gh pr merge`, approving, auto-merge (agent) | Blocked — stop at the open PR; the user lands it with `gh pr merge --rebase` |
 | Changing GitHub/Azure/ADO settings or resources (agent) | Asks the user first |
