@@ -6,7 +6,8 @@ TASK: Open the PR for $ARGUMENTS.
 
 1. PRIMING: Confirm the current branch is a feature branch (not `main`/`master`)
    and that `/devsecops-workflow:validate` and `/devsecops-workflow:eot` have
-   already passed for this ticket.
+   already passed for this ticket. An epic branch (`epic/<slug>`, the tickets
+   already merged into it) is opened the same way, plus the epic step below.
 2. END STATE: The feature branch is rebased onto the latest `main`, re-validated,
    pushed, and a PR is open with its `review-loop risk` section. A risk:low PR
    is landed with `review-loop land`; anything else waits for the user (the
@@ -26,6 +27,14 @@ TASK: Open the PR for $ARGUMENTS.
      rebase left the patch-id unchanged it reports the last outcome without
      running a model; otherwise it reviews what the rebase changed. Push only
      on exit 0; on 1–3 follow `/devsecops-workflow:eot`.
+   - Epic branches only: `review-loop epic <slug> --check`. Exit 0: the epic
+     review is current for this content and base. Exit 1 (none yet, or the
+     rebase moved the base): run `review-loop epic <slug> --prd <prd-path>
+     --tickets <tickets-dir> --format text`. Open the PR only once `--check`
+     exits 0. On findings, fix them through the follow-up tickets the run
+     wrote; a check waiting for a human (threat model, manual a11y, journey)
+     means stop and give the user the record path. `review-loop land`
+     refuses an epic PR without a current record anyway.
    - Push the branch: `git push` if this is its first push, otherwise
      `git push --force-with-lease` (required after a rebase rewrites commits
      already on the remote). Never push to `main`/`master` directly.
