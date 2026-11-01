@@ -39,9 +39,10 @@ Once a branch's PR is merged, remove what it left locally; don't let merged work
    the branch is never an ancestor of `main` and `git branch -d` can't tell; the PR state is the source of truth.
 2. Only if the local branch still points at the merged head (`git rev-parse <branch>` equals `headRefOid`), its
    worktree has no uncommitted changes (`git -C <path> status --porcelain` is empty), and its ignored files are only
-   regenerable ones (`git -C <path> status --porcelain --ignored` lists nothing but `node_modules/`, `.venv/`,
-   `__pycache__/`, `dist/`, `build/`, `target/`, `graphify-out/`): `git worktree remove` deletes ignored files too, so
-   a local `.env` or notes file there means ask first. Then `git worktree remove <path>` and `git branch -D <branch>`.
+   regenerable ones: every path `git -C <path> status --porcelain --ignored --untracked-files=all` lists (file by
+   file, so a folder can't hide a `.env`) lies under `node_modules/`, `.venv/`, `__pycache__/`, `dist/`, `build/`,
+   `target/` or `graphify-out/`. `git worktree remove` deletes ignored files too, so anything else there means ask
+   first. Then `git worktree remove <path>` and `git branch -D <branch>`.
 3. `git fetch --prune` drops the remote-tracking ref; GitHub deletes the remote branch on merge where
    "Automatically delete head branches" is on. Deleting a remote branch yourself is a platform write: ask first.
 4. Anything else stops and asks the user: an open or closed-unmerged PR, commits after the merged head, uncommitted
