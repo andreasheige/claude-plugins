@@ -37,13 +37,15 @@ Agents land only a risk:low PR, through `review-loop land <pr>` (it recomputes t
 Once a branch's PR is merged, remove what it left locally; don't let merged worktrees and branches pile up.
 1. Merged means the PR says so: `gh pr view <branch> --json state,headRefOid` shows `MERGED`. PRs land by rebase, so
    the branch is never an ancestor of `main` and `git branch -d` can't tell; the PR state is the source of truth.
-2. Only if the local branch still points at the merged head (`git rev-parse <branch>` equals `headRefOid`) and its
-   worktree has no uncommitted changes (`git -C <path> status --porcelain` is empty):
-   `git worktree remove <path>`, then `git branch -D <branch>`.
+2. Only if the local branch still points at the merged head (`git rev-parse <branch>` equals `headRefOid`), its
+   worktree has no uncommitted changes (`git -C <path> status --porcelain` is empty), and its ignored files are only
+   regenerable ones (`git -C <path> status --porcelain --ignored` lists nothing but `node_modules/`, `.venv/`,
+   `__pycache__/`, `dist/`, `build/`, `target/`, `graphify-out/`): `git worktree remove` deletes ignored files too, so
+   a local `.env` or notes file there means ask first. Then `git worktree remove <path>` and `git branch -D <branch>`.
 3. `git fetch --prune` drops the remote-tracking ref; GitHub deletes the remote branch on merge where
    "Automatically delete head branches" is on. Deleting a remote branch yourself is a platform write: ask first.
 4. Anything else stops and asks the user: an open or closed-unmerged PR, commits after the merged head, uncommitted
-   changes, or a branch with no PR.
+   changes or other ignored files, or a branch with no PR.
 Do it right after `review-loop land` merges, and whenever a session finds worktrees left by an earlier one.
 
 ## Quick reference — what's blocked vs. required
