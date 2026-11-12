@@ -128,6 +128,37 @@ test("recommendations: GitHub repos get a malware-alerts link, others don't; can
   assert.doesNotMatch(run(["scan", root], { roots: [root], home }).stdout, /## Recommendations/);
 });
 
+test("a failed osv-scanner run leaves no stamp, keeps the previous report and alert, and retries", () => {
+  const root = tree({ "a/.nvmrc": "lts/*\n" });
+  const home = tmp("sw-home-");
+  const data = dataFor(root);
+  fs.rmSync(path.join(data, "osv.json"));
+  const bin = tmp("sw-bin-");
+  fs.writeFileSync(path.join(bin, "osv-scanner"), "#!/bin/sh\necho boom >&2\nexit 127\n", { mode: 0o755 });
+  fs.writeFileSync(path.join(home, "report.md"), "previous report\n");
+  fs.writeFileSync(path.join(home, "alert.txt"), "previous alert\n");
+  const r = spawnSync(process.execPath, [SCRIPT, "check", "--quiet"], { encoding: "utf8", env: { ...process.env,
+    PATH: `${bin}${path.delimiter}${process.env.PATH}`, STACK_WATCH_HOME: home, STACK_WATCH_DATA_DIR: data,
+    STACK_WATCH_TODAY: DAY, STACK_WATCH_ROOTS: root, STACK_WATCH_NO_PROBE: "1" } });
+  assert.match(r.stderr, /osv-scanner failed: boom/);
+  assert.ok(!fs.existsSync(path.join(home, "last-run")), "no stamp → next hourly run retries");
+  assert.equal(fs.readFileSync(path.join(home, "report.md"), "utf8"), "previous report\n");
+  assert.equal(fs.readFileSync(path.join(home, "alert.txt"), "utf8"), "previous alert\n");
+});
+
+test("git submodules are scanned; worktrees are not", () => {
+  const root = tree({
+    "app/.git/config": "",
+    "app/libs/sub/.git": "gitdir: ../../.git/modules/libs/sub\n",
+    "app/libs/sub/.nvmrc": "20\n",
+    "app-wt/.git": "gitdir: /x/app/.git/worktrees/app-wt\n",
+    "app-wt/.nvmrc": "18\n",
+  });
+  const out = run(["scan", root], { roots: [root] }).stdout;
+  assert.match(out, /app\/libs\/sub\/\.nvmrc:1` \.nvmrc `20` — Node\.js 20 is EOL/);
+  assert.doesNotMatch(out, /app-wt/);
+});
+
 test("advisories: Node security post is reported, and alerted only once", () => {
   const root = tree({ "a/.nvmrc": "lts/*\n" });
   const home = tmp("sw-home-");
