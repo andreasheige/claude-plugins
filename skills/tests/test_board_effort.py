@@ -1,12 +1,11 @@
 import datetime as dt
 import json
-import os
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
-import _path  # noqa: F401
+import _path
 import adolib
 import ado_sync_state
 import effort
@@ -74,16 +73,7 @@ class AzWrapper(unittest.TestCase):
         self.assertEqual(adolib.project_slug("!!!"), "default")
 
 
-PLAN = """# Plan
-- [x] 1.1 tokens (abc1234f, deadbeef)
-- [x] @runner 1.2 themes done in
-  0badc0de on a second line
-- [ ] 2.1 shell
-- [~] 2.2 rail
-- [x] S.1 contract (1234abcd)
-## Notes
-- [x] 9.9 unmapped
-"""
+PLAN = (_path.FIXTURES / "plan.md").read_text(encoding="utf-8")
 
 
 class Plans(unittest.TestCase):
@@ -133,7 +123,9 @@ class Effort(unittest.TestCase):
         self.assertEqual(u, [(dt.datetime(2026, 11, 10, 14, tzinfo=UTC), 115, 7, 100)])
 
     def test_aggregate_intervals(self):
-        t = lambda h: dt.datetime(2026, 11, 10, h, tzinfo=UTC)  # noqa: E731
+        def t(h):
+            return dt.datetime(2026, 11, 10, h, tzinfo=UTC)
+
         done = [(t(15), "B", "2.1"), (t(14), "A", "1.1"), (t(14), "A", "1.2")]
         usage = [(t(13), 1, 1, 0), (t(14), 10, 2, 5), (t(15), 100, 3, 50), (t(16), 999, 9, 9)]
         agg = effort.aggregate(done, usage, t(12))
@@ -155,7 +147,10 @@ class Effort(unittest.TestCase):
                                       "effort": {"repo": t, "since": "2026-11-10T12:00:00Z"}}), encoding="utf-8")
             times = {"abc1234f": "2026-11-10T13:00:00+00:00", "deadbeef": "2026-11-10T13:30:00+00:00",
                      "0badc0de": "2026-11-10T14:00:00+00:00", "1234abcd": "2026-11-10T11:00:00+00:00"}
-            ct = lambda repo, h: effort.parse_ts(times[h]) if h in times else None  # noqa: E731
+
+            def ct(repo, h):
+                return effort.parse_ts(times[h]) if h in times else None
+
             agg, asof = effort.compute(plans.load_mapping(mp), commit_time=ct, usage_lines=[])
             self.assertAlmostEqual(agg["T1"]["h"], 2.0)       # 12:00 -> 13:30 (1.1), 13:30 -> 14:00 (1.2)
             self.assertNotIn("T2", agg)                         # its only commit predates `since`

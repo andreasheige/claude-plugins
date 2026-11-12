@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-import _path  # noqa: F401  (puts scripts/ on sys.path)
+import _path
 import backlog as bl
 
 FIXTURE = json.loads((_path.FIXTURES / "backlog.json").read_text(encoding="utf-8"))
@@ -108,15 +108,14 @@ class Keys(unittest.TestCase):
         self.assertNotEqual(bl.content_hash(it, d), h)
 
     def test_approval_binds_target_inherited_defaults_and_identity(self):
-        for change in (lambda d: d["ado"].__setitem__("area", "Other\\Area"),
-                       lambda d: d["ado"].__setitem__("organization", "https://dev.azure.com/other-org"),
-                       lambda d: d["ado"].__setitem__("project", "Other"),
-                       lambda d: d["ado"].__setitem__("assignedTo", "someone@example.com"),
-                       lambda d: d.__setitem__("project", "Another backlog")):
+        changes = [("ado", "area", "Other\\Area"), ("ado", "organization", "https://dev.azure.com/other-org"),
+                   ("ado", "project", "Other"), ("ado", "assignedTo", "someone@example.com"),
+                   (None, "project", "Another backlog")]
+        for where, field, value in changes:
             d = fresh()
             bl.approve(d, "Ann", None)
-            change(d)
-            self.assertFalse(bl.is_approved(d["items"][1], d))
+            (d[where] if where else d)[field] = value
+            self.assertFalse(bl.is_approved(d["items"][1], d), field)
 
     def test_item_override_shields_from_default_change(self):
         d = fresh()
