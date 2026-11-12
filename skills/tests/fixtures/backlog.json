@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "project": "Demo Prototype",
+  "language": "sv",
+  "source": { "prototype": "proto-site/index.html", "inventory": "shots/inventory.json" },
+  "ado": {
+    "organization": "https://dev.azure.com/example-org",
+    "project": "Example",
+    "team": "Example Team",
+    "board": "Stories",
+    "area": "Example\\Web",
+    "iteration": "Example\\Sprint 1"
+  },
+  "items": [
+    {
+      "key": "F1",
+      "type": "Feature",
+      "title": "Verktygskatalog i nya designen",
+      "description": "Katalogen byggs om enligt prototypen."
+    },
+    {
+      "key": "S1",
+      "type": "User Story",
+      "title": "Sök verktyg i katalogen",
+      "description": "Som medarbetare vill jag söka bland verktygen så att jag hittar rätt verktyg snabbt.\n\n- Sökfält överst\n- Filter per kategori",
+      "acceptanceCriteria": [
+        { "given": "katalogen är öppen", "when": "jag skriver \"lön\" i sökfältet", "then": "visas bara verktyg som matchar" },
+        { "given": "ingen träff", "when": "sökningen körs", "then": "visas ett tomt läge med en länk för att rensa" }
+      ],
+      "parent": "F1",
+      "screenshots": ["verktyg-desktop-light.png", "verktyg-phone-dark.png"],
+      "tags": ["FE"],
+      "storyPoints": 3
+    },
+    {
+      "key": "S2",
+      "type": "User Story",
+      "title": "Fäst favoritverktyg",
+      "description": "Som medarbetare vill jag fästa verktyg så att de syns först.",
+      "acceptanceCriteria": [
+        { "given": "ett verktyg i katalogen", "when": "jag fäster det", "then": "visas det först på startsidan" },
+        { "given": "ett fäst verktyg", "when": "jag laddar om sidan", "then": "är det fortfarande fäst" }
+      ],
+      "parent": "F1",
+      "dependsOn": ["S1"],
+      "screenshots": ["start-desktop-light.png"],
+      "state": "Active",
+      "column": "In development"
+    },
+    {
+      "key": "T1",
+      "type": "Task",
+      "title": "Backend: spara fästa verktyg per användare (/me/state)",
+      "description": "GET /me/state och PUT /me/state/{key}, ett JSON-dokument per användare.",
+      "parent": "#19184",
+      "dependsOn": ["S2"],
+      "tags": ["BE"]
+    }
+  ]
+}
