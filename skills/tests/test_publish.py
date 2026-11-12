@@ -82,6 +82,13 @@ class Publish(unittest.TestCase):
         self.assertIn("--org", create)
         self.assertEqual(create[create.index("--iteration") + 1], "Example\\Sprint 1")
 
+    def test_board_is_read_from_the_backlogs_organization(self):
+        Run(approved(), self.fake, self.ids, apply=False)
+        invokes = [c for c in self.fake.calls if c[:2] == ["devops", "invoke"]]
+        self.assertEqual(len(invokes), 2)
+        for c in invokes:
+            self.assertEqual(c[c.index("--org") + 1], "https://dev.azure.com/example-org")
+
     def test_second_apply_creates_nothing(self):
         Run(approved(), self.fake, self.ids, apply=True)
         before = len(self.fake.items)
