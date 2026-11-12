@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-import _path  # noqa: F401
+import _path
 import adolib
 import ado_publish as pub
 import backlog as bl
@@ -257,7 +257,10 @@ class SyncAndLogin(unittest.TestCase):
                           {"when": "some", "state": "Active", "column": "In development"},
                           {"when": "all", "state": "Active", "column": "Test/Design review"}]}), encoding="utf-8")
             real_az = adolib.Az
-            make = lambda *a, **k: real_az(prefix=["az"], runner=fake)  # noqa: E731
+
+            def make(*a, **k):
+                return real_az(prefix=["az"], runner=fake)
+
             args = [str(mp), "--project", "Demo Prototype", "--ids-file", str(ids)]
             for apply in (False, True):
                 out = io.StringIO()
