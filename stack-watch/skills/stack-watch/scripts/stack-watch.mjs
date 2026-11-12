@@ -195,7 +195,7 @@ export function judge(spec, product, day, ctx = {}) {
 // A linked git worktree duplicates its main checkout; skip it. Submodules also have a `.git` file
 // ("gitdir: ../.git/modules/x") but are real code. A linked worktree's gitdir is always <repo>/.git/worktrees/<name>.
 const isWorktree = (dir) =>
-  /^gitdir:\s*.*\.git[\\/]worktrees[\\/][^\\/\s]+[\\/]?\s*$/m.test(readText(path.join(dir, ".git")) || "");
+  /^gitdir:\s*(?:.*[\\/])?\.git[\\/]worktrees[\\/][^\\/\s]+[\\/]?\s*$/m.test(readText(path.join(dir, ".git")) || "");
 
 function* walk(dir, depth, cfg) {
   let ents;
