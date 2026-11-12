@@ -38,6 +38,9 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     m = plans.load_mapping(a.mapping)
     ado = m.get("ado") or {}
+    if not (ado.get("organization") and ado.get("project")):
+        print("the mapping needs ado.organization and ado.project (the same as the backlog's)", file=sys.stderr)
+        return 2
     ids_path = a.ids_file or adolib.ids_path(a.project, ado.get("organization"), ado.get("project"))
     if not ids_path.is_file():
         print(f"no ids file at {ids_path}: publish first", file=sys.stderr)
@@ -73,6 +76,10 @@ def main(argv=None) -> int:
             tag = backlog.idempotency_tag(a.project, key)
             if not adolib.has_tag(f.get("System.Tags"), tag):
                 print(f"#{wid} {key}: refused: it does not carry {tag}, so it is not this backlog's item")
+                rc = 2
+                continue
+            if f.get("System.TeamProject") != ado["project"]:
+                print(f"#{wid} {key}: refused: it is in project {f.get('System.TeamProject')!r}, not {ado['project']!r}")
                 rc = 2
                 continue
             cur, curcol, wtype = f["System.State"], f.get("System.BoardColumn"), f["System.WorkItemType"]

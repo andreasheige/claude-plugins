@@ -165,7 +165,7 @@ class Publisher:
             why = "is Removed"
         elif not adolib.has_tag(f.get("System.Tags"), tag):
             why = f"does not carry {tag} (not this backlog's item)"
-        elif self.ado.get("project") and f.get("System.TeamProject") not in (None, self.ado["project"]):
+        elif f.get("System.TeamProject") != self.ado.get("project"):
             why = f"is in project {f.get('System.TeamProject')!r}, not {self.ado['project']!r}"
         else:
             return int(wid)
@@ -222,16 +222,25 @@ class Publisher:
         return wid
 
     def needs_placement(self, it: dict, wid: int) -> bool:
-        """For an item that already exists: place it only if its placement never completed.
-        placed False: the create succeeded but the update did not. Unknown (found by tag): only if it
-        still sits in New, so an item the team has moved on is never reset."""
-        st = self.placed.get(it["key"])
-        if st is not None:
-            return not st
-        if it.get("state", "New") == "New" and not it.get("column"):
+        """For an item that already exists: place it only if its placement never took effect.
+
+        Placement is only ever applied to an item that is still in New (every item is created in New).
+        So whatever the ids file says (placed false after a lost response, or unknown after a lost ids
+        file), the current ADO state decides: still New and the target differs -> place; otherwise the
+        update already landed or the team has moved the item on, so it is left alone and marked placed.
+        """
+        if self.placed.get(it["key"]) is True:
             return False
-        w = self._az("boards", "work-item", "show", "--id", str(wid), check=False) if self.online else None
-        return ((w or {}).get("fields") or {}).get("System.State") == "New"
+        state, column = it.get("state", "New"), it.get("column")
+        if state == "New" and not column:
+            return False
+        if not self.online:
+            return self.placed.get(it["key"]) is False
+        w = self._az("boards", "work-item", "show", "--id", str(wid), check=False)
+        f = (w or {}).get("fields") or {}
+        if f.get("System.State") != "New":
+            return False
+        return state != "New" or (column is not None and f.get("System.BoardColumn") != column)
 
     def place_item(self, it: dict, wid: int | None) -> None:
         state, column = it.get("state", "New"), it.get("column")
@@ -278,6 +287,10 @@ class Publisher:
             self.out(f"{it['key']}: linked {kind} -> #{target}")
 
     def run(self) -> int:
+        problems = bl.target_problems(self.data)
+        if problems:
+            self.out("refused: " + "; ".join(problems))
+            return 2
         items, notes = select(self.data)
         for n in notes:
             self.out(n)
@@ -310,7 +323,7 @@ class Publisher:
                 self.out(f"{it['key']}: exists as #{wid}, not created again")
                 if self.needs_placement(it, wid):
                     self.place_item(it, wid)
-                elif self.placed.get(it["key"]) is None:
+                elif self.placed.get(it["key"]) is not True:
                     self.mark_placed(it)
                 if self.effort.get(it["key"]) and self.online:
                     self.update_effort(it, wid)

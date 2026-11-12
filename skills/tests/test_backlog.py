@@ -145,6 +145,13 @@ class Approval(unittest.TestCase):
         self.assertTrue(all(bl.is_approved(it, d) for it in d["items"]))
         self.assertEqual(d["approvals"][0]["scope"], "all")
 
+    def test_approval_needs_explicit_destination(self):
+        d = fresh()
+        del d["ado"]["project"]
+        with self.assertRaisesRegex(ValueError, "ado.project is required"):
+            bl.approve(d, "Ann", None)
+        self.assertFalse(any("approval" in it for it in d["items"]))
+
     def test_unknown_id_raises_and_changes_nothing(self):
         d = fresh()
         with self.assertRaises(KeyError):

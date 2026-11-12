@@ -40,15 +40,17 @@ hand. So publish never creates before it has looked:
    is not Removed, carries this item's exact tag and is in the target project (otherwise forget it) ->
    WIQL query for the tag (excluding Removed) -> only then create. More than one hit is reported; the
    lowest id is used. Ids of earlier-published items that links point at are verified the same way.
-   Sync refuses an id whose item does not carry the tag. The mapping's `ado` block must name the same
+   Sync refuses an id whose item does not carry the tag or is not in the mapping's project. The mapping's `ado` block must name the same
    organization/project as the backlog, so both find the same ids file.
 
 Re-running publish is safe and converges step by step: existing items are reported as `exists as #id`
 and not created again; missing links are added (existing relations are checked every run); a
 placement that did not complete is resumed. The ids file records it per item
 (`{"S1": {"id": 1001, "placed": true}}`, `placed: false` between create and the state/column update).
-An item found only by its tag (ids file lost) is placed only if it still sits in New, so an item the
-team has moved on is never reset. With `--effort` the effort line is refreshed.
+Whatever the ids file says, an existing item is placed only if ADO still shows it in New (every item
+is created in New): if the update already landed, or the team has moved the item on, it is left alone.
+(az exposes no revision precondition, so a change made in the second between that read and the update
+can still be overwritten.) With `--effort` the effort line is refreshed.
 
 ## Board placement (state + column)
 

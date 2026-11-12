@@ -138,6 +138,26 @@ class Publish(unittest.TestCase):
         self.assertTrue(adolib.load_ids(self.ids)["S2"]["placed"])
         self.assertIn("S2: state Active, column In development", r.text)
 
+    def test_lost_response_then_team_moved_item_is_not_reset(self):
+        # The update landed in ADO but its response was lost: placed stays false.
+        Run(approved(), self.fake, self.ids, apply=True)
+        entries = {k: {"id": v["id"], "placed": False} for k, v in adolib.load_ids(self.ids).items()}
+        self.ids.write_text(json.dumps(entries), encoding="utf-8")
+        self.fake.items[1002]["fields"]["System.BoardColumn"] = "Test/Design review"
+        n = len(self.fake.writes())
+        r = Run(approved(), self.fake, self.ids, apply=True)
+        self.assertEqual(len(self.fake.writes()), n, r.text)
+        self.assertEqual(self.fake.items[1002]["fields"]["System.BoardColumn"], "Test/Design review")
+        self.assertTrue(all(v["placed"] for v in adolib.load_ids(self.ids).values()))
+
+    def test_publish_refuses_without_explicit_destination(self):
+        d = approved()
+        del d["ado"]["organization"]
+        r = Run(d, self.fake, self.ids, apply=True)
+        self.assertEqual(r.rc, 2)
+        self.assertIn("ado.organization is required", r.text)
+        self.assertEqual(self.fake.calls, [])
+
     def test_item_found_by_tag_is_not_reset_once_moved_on(self):
         Run(approved(), self.fake, self.ids, apply=True)
         self.ids.unlink()
@@ -252,7 +272,7 @@ class SyncAndLogin(unittest.TestCase):
             mp = Path(t) / "map.json"
             mp.write_text(json.dumps({
                 "plans": ["plan.md"], "items": {"S1": ["1.*"], "S2": ["2.*"]},
-                "ado": {"project": "Example", "team": "Example Team"},
+                "ado": {"organization": "https://dev.azure.com/example-org", "project": "Example", "team": "Example Team"},
                 "rules": [{"when": "none", "state": "New"},
                           {"when": "some", "state": "Active", "column": "In development"},
                           {"when": "all", "state": "Active", "column": "Test/Design review"}]}), encoding="utf-8")
@@ -280,6 +300,14 @@ class SyncAndLogin(unittest.TestCase):
                 self.assertEqual(ado_sync_state.main(args + ["--apply"]), 2)
             self.assertIn("not this backlog's item", out.getvalue())
             self.assertEqual(fake.items[1001]["fields"]["System.State"], "New")
+            # An item moved to another project (tag kept) is refused too.
+            fake.items[1002]["fields"]["System.TeamProject"] = "Other"
+            fake.items[1002]["fields"]["System.State"] = "New"
+            out = io.StringIO()
+            with mock.patch.object(ado_sync_state.adolib, "Az", make), contextlib.redirect_stdout(out):
+                self.assertEqual(ado_sync_state.main(args + ["--apply"]), 2)
+            self.assertIn("is in project 'Other'", out.getvalue())
+            self.assertEqual(fake.items[1002]["fields"]["System.State"], "New")
 
     def test_login_without_az_prints_installer_and_exits_4(self):
         import ado_login
