@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 import adolib
+import backlog
 import plans
 
 
@@ -30,14 +31,14 @@ def decide(rules, marks: list[str], columns: list[dict], wtype: str, allow_done:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("mapping", type=Path)
-    ap.add_argument("--project", required=True, help="backlog project name (selects the ids file)")
+    ap.add_argument("--project", required=True, help="backlog project name, exactly as in backlog.json (selects the ids file)")
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--effort", action="store_true", help="also rewrite the effort line")
     ap.add_argument("--ids-file", type=Path)
     a = ap.parse_args(argv)
     m = plans.load_mapping(a.mapping)
     ado = m.get("ado") or {}
-    ids_path = a.ids_file or adolib.state_dir(a.project) / "ids.json"
+    ids_path = a.ids_file or adolib.ids_path(a.project, ado.get("organization"), ado.get("project"))
     if not ids_path.is_file():
         print(f"no ids file at {ids_path}: publish first", file=sys.stderr)
         return 2
@@ -69,6 +70,11 @@ def main(argv=None) -> int:
                 print(f"{key}: not in the ids file, skipped")
                 continue
             f = az("boards", "work-item", "show", "--id", str(wid), *org)["fields"]
+            tag = backlog.idempotency_tag(a.project, key)
+            if not adolib.has_tag(f.get("System.Tags"), tag):
+                print(f"#{wid} {key}: refused: it does not carry {tag}, so it is not this backlog's item")
+                rc = 2
+                continue
             cur, curcol, wtype = f["System.State"], f.get("System.BoardColumn"), f["System.WorkItemType"]
             marks = [mk for mk, _, _ in items.get(key, [])]
             try:
