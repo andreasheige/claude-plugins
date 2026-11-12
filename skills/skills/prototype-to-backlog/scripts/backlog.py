@@ -210,8 +210,19 @@ def is_approved(it: dict, data: dict) -> bool:
     return bool(a.get("hash")) and a["hash"] == content_hash(it, data)
 
 
+def target_problems(data: dict) -> list[str]:
+    """Approval and publishing need an explicit destination: az's own defaults must never choose it."""
+    ado = data.get("ado") or {}
+    return [f"ado.{f} is required to approve or publish (az defaults never pick the destination)"
+            for f in ("organization", "project") if not ado.get(f)]
+
+
 def approve(data: dict, by: str, ids: list[str] | None, note: str = "", now: dt.datetime | None = None) -> list[str]:
-    """Mark items approved (all when ids is None). Returns the keys approved. Unknown ids raise."""
+    """Mark items approved (all when ids is None). Returns the keys approved.
+    Unknown ids raise KeyError; a backlog without an explicit ADO destination raises ValueError."""
+    problems = target_problems(data)
+    if problems:
+        raise ValueError("; ".join(problems))
     known = {it["key"]: it for it in data["items"]}
     if ids is not None:
         unknown = [i for i in ids if i not in known]
@@ -362,7 +373,7 @@ def main(argv=None) -> int:
         ids = None if a.all else [s.strip() for s in a.ids.split(",") if s.strip()]
         try:
             chosen = approve(data, a.by, ids, a.note)
-        except KeyError as e:
+        except (KeyError, ValueError) as e:
             print(e.args[0], file=sys.stderr)
             return 2
         save(a.backlog, data)
