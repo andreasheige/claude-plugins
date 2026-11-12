@@ -1,6 +1,7 @@
 import contextlib
 import copy
 import io
+import subprocess
 import json
 import tempfile
 import unittest
@@ -13,6 +14,10 @@ import backlog as bl
 from fakeaz import FakeAz
 
 FIXTURE = json.loads((_path.FIXTURES / "backlog.json").read_text(encoding="utf-8"))
+
+
+def ids_of(path):
+    return {k: v["id"] for k, v in adolib.load_ids(path).items()}
 
 
 def approved(ids=None):
@@ -61,7 +66,7 @@ class Publish(unittest.TestCase):
     def test_apply_creates_in_order_links_and_places(self):
         r = Run(approved(), self.fake, self.ids, apply=True)
         self.assertEqual(r.rc, 0, r.text)
-        ids = json.loads(self.ids.read_text(encoding="utf-8"))
+        ids = ids_of(self.ids)
         self.assertEqual(ids, {"F1": 1000, "S1": 1001, "S2": 1002, "T1": 1003})
         s1 = self.fake.items[1001]["fields"]
         self.assertIn(bl.idempotency_tag("Demo Prototype", "S1"), s1["System.Tags"])
@@ -101,7 +106,7 @@ class Publish(unittest.TestCase):
         self.assertIn("S1: cached #555 does not carry", r.text)
         self.assertEqual(self.fake.items[555]["relations"], [])
         self.assertEqual(self.fake.items[555]["fields"]["System.State"], "Active")
-        self.assertNotEqual(json.loads(self.ids.read_text(encoding="utf-8"))["S1"], 555)
+        self.assertNotEqual(ids_of(self.ids)["S1"], 555)
 
     def test_backlogs_with_alike_names_get_separate_ids_files(self):
         a = adolib.ids_path("Demo / Web", "https://dev.azure.com/o", "P")
@@ -109,6 +114,39 @@ class Publish(unittest.TestCase):
         c = adolib.ids_path("Demo / Web", "https://dev.azure.com/o", "Q")
         self.assertEqual(a.parent, b.parent)
         self.assertEqual(len({a, b, c}), 3)
+
+    def test_interrupted_placement_is_resumed_on_rerun(self):
+        real = self.fake.handle
+
+        def update_fails(a):
+            if a[:3] == ["boards", "work-item", "update"]:
+                return subprocess.CompletedProcess(a, 1, "", "ERROR: transient")
+            return real(a)
+
+        self.fake.handle = update_fails
+        with self.assertRaises(adolib.AzError):
+            Run(approved(), self.fake, self.ids, apply=True)
+        self.assertEqual(adolib.load_ids(self.ids)["S2"], {"id": 1002, "placed": False})
+        self.fake.handle = real
+        r = Run(approved(), self.fake, self.ids, apply=True)
+        self.assertEqual(r.rc, 0, r.text)
+        titles = [it["fields"]["System.Title"] for it in self.fake.items.values()]
+        self.assertEqual(len(titles), len(set(titles)), "no create may repeat")  # T1 is created now
+        self.assertEqual(ids_of(self.ids)["S2"], 1002)
+        s2 = self.fake.items[1002]["fields"]
+        self.assertEqual((s2["System.State"], s2["System.BoardColumn"]), ("Active", "In development"))
+        self.assertTrue(adolib.load_ids(self.ids)["S2"]["placed"])
+        self.assertIn("S2: state Active, column In development", r.text)
+
+    def test_item_found_by_tag_is_not_reset_once_moved_on(self):
+        Run(approved(), self.fake, self.ids, apply=True)
+        self.ids.unlink()
+        self.fake.items[1002]["fields"]["System.BoardColumn"] = "Test/Design review"
+        n = len(self.fake.writes())
+        r = Run(approved(), self.fake, self.ids, apply=True)
+        self.assertEqual(len(self.fake.writes()), n, r.text)
+        self.assertEqual(self.fake.items[1002]["fields"]["System.BoardColumn"], "Test/Design review")
+        self.assertTrue(adolib.load_ids(self.ids)["S2"]["placed"])
 
     def test_second_apply_creates_nothing(self):
         Run(approved(), self.fake, self.ids, apply=True)
@@ -125,14 +163,14 @@ class Publish(unittest.TestCase):
         self.ids.unlink()
         r = Run(approved(), self.fake, self.ids, apply=True)
         self.assertEqual(len(self.fake.items), 4, r.text)
-        self.assertEqual(json.loads(self.ids.read_text(encoding="utf-8"))["S2"], 1002)
+        self.assertEqual(ids_of(self.ids)["S2"], 1002)
 
     def test_removed_item_in_ids_file_is_recreated(self):
         Run(approved(), self.fake, self.ids, apply=True)
         self.fake.items[1001]["fields"]["System.State"] = "Removed"
         r = Run(approved(), self.fake, self.ids, apply=True)
         self.assertIn("S1: cached #1001 is Removed", r.text)
-        self.assertEqual(json.loads(self.ids.read_text(encoding="utf-8"))["S1"], 1004)
+        self.assertEqual(ids_of(self.ids)["S1"], 1004)
 
     def test_only_approved_items_and_edits_void(self):
         d = approved(["F1", "S1"])

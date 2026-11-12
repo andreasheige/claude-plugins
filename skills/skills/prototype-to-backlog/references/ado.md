@@ -43,8 +43,12 @@ hand. So publish never creates before it has looked:
    Sync refuses an id whose item does not carry the tag. The mapping's `ado` block must name the same
    organization/project as the backlog, so both find the same ids file.
 
-Re-running publish is safe: existing items are reported as `exists as #id` and not touched (except the
-effort line with `--effort`, and missing links).
+Re-running publish is safe and converges step by step: existing items are reported as `exists as #id`
+and not created again; missing links are added (existing relations are checked every run); a
+placement that did not complete is resumed. The ids file records it per item
+(`{"S1": {"id": 1001, "placed": true}}`, `placed: false` between create and the state/column update).
+An item found only by its tag (ids file lost) is placed only if it still sits in New, so an item the
+team has moved on is never reset. With `--effort` the effort line is refreshed.
 
 ## Board placement (state + column)
 
