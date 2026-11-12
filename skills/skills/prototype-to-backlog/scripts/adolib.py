@@ -107,9 +107,10 @@ class Az:
 
 # ---- board -------------------------------------------------------------------------------------
 
-def read_board(az: Az, project: str, team: str, board: str) -> dict:
-    """Columns and the board's Kanban column field. Both come from the team's own board settings."""
-    common = ["--route-parameters", f"project={project}", f"team={team}"]
+def read_board(az: Az, project: str, team: str, board: str, org: str | None = None) -> dict:
+    """Columns and the board's Kanban column field. Both come from the team's own board settings,
+    in the same organization the items are written to (not az's default)."""
+    common = (["--org", org] if org else []) + ["--route-parameters", f"project={project}", f"team={team}"]
     cols = az("devops", "invoke", "--area", "work", "--resource", "columns",
               *common, f"board={board}", "--api-version", "7.1")
     info = az("devops", "invoke", "--area", "work", "--resource", "boards",

@@ -50,7 +50,8 @@ def main(argv=None) -> int:
     try:
         board = {"columns": [], "columnField": None}
         if ado.get("project") and ado.get("team"):
-            board = adolib.read_board(az, ado["project"], ado["team"], ado.get("board", "Stories"))
+            board = adolib.read_board(az, ado["project"], ado["team"], ado.get("board", "Stories"),
+                                      ado.get("organization"))
         else:
             print("mapping has no ado.project/ado.team: board columns not checked, states only")
         items = plans.collect(m)

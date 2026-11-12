@@ -133,7 +133,8 @@ class Publisher:
         if not (self.ado.get("project") and self.ado.get("team")):
             self.out("board: ado.project/ado.team not set, columns not checked")
             return
-        self.board = adolib.read_board(self.az, self.ado["project"], self.ado["team"], self.ado.get("board", "Stories"))
+        self.board = adolib.read_board(self.az, self.ado["project"], self.ado["team"], self.ado.get("board", "Stories"),
+                                       self.ado.get("organization"))
 
     def check_placement(self, items: list[dict]) -> list[str]:
         errs = []
