@@ -722,8 +722,12 @@ async function cmdScan(dirs) {
 function cmdStatus(args) {
   if (args.includes("--brief")) {
     // For SessionStart hooks: one line, only if actionable and fresh (≤ 7 days).
-    try { if (Date.now() - fs.statSync(P.alert).mtimeMs < 7 * 86400000) process.stdout.write(fs.readFileSync(P.alert, "utf8")); }
-    catch { /* no alert */ }
+    // One file descriptor for both the age check and the read, so the file can't change in between.
+    let fd;
+    try {
+      fd = fs.openSync(P.alert, "r");
+      if (Date.now() - fs.fstatSync(fd).mtimeMs < 7 * 86400000) process.stdout.write(fs.readFileSync(fd, "utf8"));
+    } catch { /* no alert */ } finally { if (fd !== undefined) fs.closeSync(fd); }
     return;
   }
   console.log(readText(P.report) ?? "No report yet: run `check --force`.");
