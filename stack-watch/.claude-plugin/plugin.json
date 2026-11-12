@@ -1,0 +1,10 @@
+{
+  "name": "stack-watch",
+  "displayName": "Stack Watch",
+  "version": "0.1.0",
+  "description": "Daily check of the runtimes, frameworks and dependencies your projects use: EOL and behind-LTS versions (any product endoflife.date tracks), known vulnerabilities in lockfiles (osv-scanner) and Node.js security advisories. Harness-neutral skill; the Claude plugin adds a SessionStart nudge.",
+  "author": {
+    "name": "Andreas Heige"
+  },
+  "license": "MIT"
+}
