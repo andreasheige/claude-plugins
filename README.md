@@ -14,6 +14,7 @@ The tour of how it all fits together is in [the gist](https://gist.github.com/an
 | [`review-loop/`](review-loop) | plugin | Harness-neutral review CLI: `scan` a diff for secrets, hidden Unicode and new dependencies (pinned scanners, fails closed); `worker` runs a read-only model finder/verifier in a stripped scratch worktree |
 | [`dotnet-kit/`](dotnet-kit) | plugin | Path-scoped .NET / C# skills; every code sample is compile-verified (`dotnet-kit/verify/verify.sh`) |
 | [`stack-watch/`](stack-watch) | plugin + skill | Daily check of your projects' runtimes, frameworks and dependencies: EOL / behind-LTS for anything endoflife.date tracks, lockfile CVEs via osv-scanner, Node.js security advisories. Desktop notification + SessionStart nudge; harness-neutral skill, schedule on macOS/Linux/Windows |
+| [`skills/`](skills) | plugin + skills | Standalone agent skills. `prototype-to-backlog`: prototype → screenshots → user stories refined by persona agents (PO, UX, tech lead, QA) → your approval → idempotent publish to Azure DevOps with board placement; browser sign-in for non-developers. Python stdlib, Windows + macOS |
 | [`starter/CLAUDE.md`](starter/CLAUDE.md) | template | Operating principles, security posture, session hygiene |
 | [`starter/settings/`](starter/settings) | template | `permissions.deny` — core rules, and an optional Azure set |
 | [`starter/git-hooks/`](starter/git-hooks) | template | Global git hooks: Conventional Commits, no merge commits, no credentials in dotfiles — for every commit, human or agent |
@@ -58,6 +59,7 @@ The hooks are string matches on the command or path. They stop the common accide
 bash guardrails/tests/run.sh    # deny/allow cases + canary, both ways
 bash plan-gate/tests/run.sh     # block / allow / BLOCKED / off / loop guard / fail-open
 node --test stack-watch/tests/run.mjs      # release-data + osv fixtures, no network
+python3 -m unittest discover -s skills/tests  # backlog, idempotency, board columns, effort; az faked
 ```
 
 ## License
