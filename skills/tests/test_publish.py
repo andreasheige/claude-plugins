@@ -16,6 +16,10 @@ from fakeaz import FakeAz
 FIXTURE = json.loads((_path.FIXTURES / "backlog.json").read_text(encoding="utf-8"))
 
 
+def opt_id(argv):
+    return int(argv[argv.index("--id") + 1]) if "--id" in argv else None
+
+
 def ids_of(path):
     return {k: v["id"] for k, v in adolib.load_ids(path).items()}
 
@@ -149,6 +153,35 @@ class Publish(unittest.TestCase):
         self.assertEqual(len(self.fake.writes()), n, r.text)
         self.assertEqual(self.fake.items[1002]["fields"]["System.BoardColumn"], "Test/Design review")
         self.assertTrue(all(v["placed"] for v in adolib.load_ids(self.ids).values()))
+
+    def test_failed_placement_read_keeps_retry_pending(self):
+        real = self.fake.handle
+
+        def update_fails(a):
+            if a[:3] == ["boards", "work-item", "update"]:
+                return subprocess.CompletedProcess(a, 1, "", "ERROR: transient")
+            return real(a)
+
+        self.fake.handle = update_fails
+        with self.assertRaises(adolib.AzError):
+            Run(approved(), self.fake, self.ids, apply=True)
+        shows = {"n": 0}
+
+        def second_show_fails(a):
+            # 1st show of S2 is verify_cached; the 2nd (placement read) fails transiently.
+            if a[:3] == ["boards", "work-item", "show"] and opt_id(a) == 1002:
+                shows["n"] += 1
+                if shows["n"] == 2:
+                    return subprocess.CompletedProcess(a, 1, "", "ERROR: transient")
+            return real(a)
+
+        self.fake.handle = second_show_fails
+        with self.assertRaises(adolib.AzError):
+            Run(approved(), self.fake, self.ids, apply=True)
+        self.assertIs(adolib.load_ids(self.ids)["S2"]["placed"], False)
+        self.fake.handle = real
+        Run(approved(), self.fake, self.ids, apply=True)
+        self.assertEqual(self.fake.items[1002]["fields"]["System.BoardColumn"], "In development")
 
     def test_publish_refuses_without_explicit_destination(self):
         d = approved()
