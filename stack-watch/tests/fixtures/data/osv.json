@@ -1,0 +1,150 @@
+{
+ "results": [
+  {
+   "source": {
+    "path": "__ROOT__/app/package-lock.json",
+    "type": "lockfile"
+   },
+   "packages": [
+    {
+     "package": {
+      "name": "next",
+      "version": "15.5.26",
+      "ecosystem": "npm",
+      "purl": "pkg:npm/next@15.5.26?source=PUBLIC_REGISTRY"
+     },
+     "groups": [
+      {
+       "ids": [
+        "GHSA-2464-fhr4-w9xw"
+       ],
+       "aliases": [
+        "GHSA-2464-fhr4-w9xw"
+       ],
+       "max_severity": "9.5"
+      }
+     ],
+     "vulnerabilities": [
+      {
+       "id": "GHSA-2464-fhr4-w9xw",
+       "summary": "Next.js RCE",
+       "affected": [
+        {
+         "package": {
+          "name": "next"
+         },
+         "ranges": [
+          {
+           "events": [
+            {
+             "introduced": "0"
+            },
+            {
+             "fixed": "16.4.1"
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "package": {
+      "name": "eslint",
+      "version": "9.39.5",
+      "ecosystem": "npm",
+      "purl": "pkg:npm/eslint@9.39.5"
+     }
+    },
+    {
+     "package": {
+      "name": "react",
+      "version": "19.3.1",
+      "ecosystem": "npm",
+      "purl": "pkg:npm/react@19.3.1"
+     }
+    },
+    {
+     "package": {
+      "name": "fast-uri",
+      "version": "3.1.8",
+      "ecosystem": "npm",
+      "purl": "pkg:npm/fast-uri@3.1.8"
+     },
+     "groups": [
+      {
+       "ids": [
+        "GHSA-333x-w4r6-6crp"
+       ],
+       "aliases": [
+        "CVE-2026-110725",
+        "GHSA-333x-w4r6-6crp"
+       ],
+       "max_severity": "3.7"
+      }
+     ],
+     "vulnerabilities": []
+    },
+    {
+     "package": {
+      "name": "evil-pkg",
+      "version": "1.0.0",
+      "ecosystem": "npm",
+      "purl": "pkg:npm/evil-pkg@1.0.0"
+     }
+    },
+    {
+     "package": {
+      "name": "flatmap-streamx",
+      "version": "0.1.1",
+      "ecosystem": "npm",
+      "purl": "pkg:npm/flatmap-streamx@0.1.1"
+     },
+     "groups": [
+      {
+       "ids": [
+        "MAL-2026-1234"
+       ],
+       "aliases": [],
+       "max_severity": ""
+      }
+     ],
+     "vulnerabilities": [
+      {
+       "id": "MAL-2026-1234",
+       "summary": "Malicious code in flatmap-streamx (npm)"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "source": {
+    "path": "__ROOT__/.claude/worktrees/x/package-lock.json",
+    "type": "lockfile"
+   },
+   "packages": [
+    {
+     "package": {
+      "name": "next",
+      "version": "15.5.26",
+      "ecosystem": "npm",
+      "purl": "pkg:npm/next@15.5.26"
+     },
+     "groups": [
+      {
+       "ids": [
+        "GHSA-dup"
+       ],
+       "aliases": [],
+       "max_severity": "9.9"
+      }
+     ],
+     "vulnerabilities": []
+    }
+   ]
+  }
+ ]
+}

@@ -13,6 +13,7 @@ The tour of how it all fits together is in [the gist](https://gist.github.com/an
 | [`devsecops-workflow/`](devsecops-workflow) | plugin | PRD → architecture → tickets; per ticket: prime → plan → implement → validate (5 levels, real execution mandatory) → fresh-context review → commit → end-of-ticket review with `review-loop eot`/`recheck` → land. Adversarial tester and architecture reviewer; the security reviewer runs only when the review-loop CLI is absent. Also `dogma`, `cost-aware-orchestration`, `verify-before-done`, `git-workflow` |
 | [`review-loop/`](review-loop) | plugin | Harness-neutral review CLI: `scan` a diff for secrets, hidden Unicode and new dependencies (pinned scanners, fails closed); `worker` runs a read-only model finder/verifier in a stripped scratch worktree |
 | [`dotnet-kit/`](dotnet-kit) | plugin | Path-scoped .NET / C# skills; every code sample is compile-verified (`dotnet-kit/verify/verify.sh`) |
+| [`stack-watch/`](stack-watch) | plugin + skill | Daily check of your projects' runtimes, frameworks and dependencies: EOL / behind-LTS for anything endoflife.date tracks, lockfile CVEs via osv-scanner, Node.js security advisories. Desktop notification + SessionStart nudge; harness-neutral skill, schedule on macOS/Linux/Windows |
 | [`starter/CLAUDE.md`](starter/CLAUDE.md) | template | Operating principles, security posture, session hygiene |
 | [`starter/settings/`](starter/settings) | template | `permissions.deny` — core rules, and an optional Azure set |
 | [`starter/git-hooks/`](starter/git-hooks) | template | Global git hooks: Conventional Commits, no merge commits, no credentials in dotfiles — for every commit, human or agent |
@@ -56,6 +57,7 @@ The hooks are string matches on the command or path. They stop the common accide
 ```
 bash guardrails/tests/run.sh    # deny/allow cases + canary, both ways
 bash plan-gate/tests/run.sh     # block / allow / BLOCKED / off / loop guard / fail-open
+node --test stack-watch/tests/run.mjs      # release-data + osv fixtures, no network
 ```
 
 ## License

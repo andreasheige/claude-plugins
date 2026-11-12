@@ -35,6 +35,12 @@
       "source": "./review-loop",
       "description": "Harness-neutral review CLI: diff scan for secrets, hidden Unicode and new dependencies, plus read-only model finder/verifier workers in a stripped scratch worktree.",
       "category": "security"
+    },
+    {
+      "name": "stack-watch",
+      "source": "./stack-watch",
+      "description": "Daily check of your projects' runtimes, frameworks and dependencies: EOL/behind-LTS (anything endoflife.date tracks), lockfile CVEs via osv-scanner, Node.js security advisories. Harness-neutral skill; schedule on macOS, Linux and Windows.",
+      "category": "security"
     }
   ]
 }
