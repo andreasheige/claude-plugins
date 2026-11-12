@@ -236,8 +236,9 @@ class Publisher:
             return False
         if not self.online:
             return self.placed.get(it["key"]) is False
-        w = self._az("boards", "work-item", "show", "--id", str(wid), check=False)
-        f = (w or {}).get("fields") or {}
+        # check=True: a failed read raises (the run stops, nothing is marked placed, a re-run retries);
+        # treating it as "not New" would mark the item placed and never retry.
+        f = self._az("boards", "work-item", "show", "--id", str(wid)).get("fields") or {}
         if f.get("System.State") != "New":
             return False
         return state != "New" or (column is not None and f.get("System.BoardColumn") != column)
