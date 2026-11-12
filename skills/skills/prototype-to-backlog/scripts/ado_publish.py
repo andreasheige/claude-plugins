@@ -92,7 +92,7 @@ def select(data: dict) -> tuple[list[dict], list[str]]:
     """(approved items in publish order, notes about the rest). Refs to unapproved, unpublished items are errors."""
     notes, chosen = [], []
     for it in data["items"]:
-        if bl.is_approved(it):
+        if bl.is_approved(it, data):
             chosen.append(it)
         elif it.get("approval"):
             notes.append(f"{it['key']}: edited after approval, skipped (approve again)")

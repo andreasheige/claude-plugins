@@ -98,13 +98,33 @@ class Keys(unittest.TestCase):
         self.assertEqual(len(tags), 4)
 
     def test_content_hash_ignores_refinement_and_approval(self):
-        it = fresh()["items"][1]
-        h = bl.content_hash(it)
+        d = fresh()
+        it = d["items"][1]
+        h = bl.content_hash(it, d)
         it["refinement"] = {"status": "refined", "rounds": 1}
         it["approval"] = {"at": "x", "hash": "0" * 16}
-        self.assertEqual(bl.content_hash(it), h)
+        self.assertEqual(bl.content_hash(it, d), h)
         it["title"] += "!"
-        self.assertNotEqual(bl.content_hash(it), h)
+        self.assertNotEqual(bl.content_hash(it, d), h)
+
+    def test_approval_binds_target_inherited_defaults_and_identity(self):
+        for change in (lambda d: d["ado"].__setitem__("area", "Other\\Area"),
+                       lambda d: d["ado"].__setitem__("organization", "https://dev.azure.com/other-org"),
+                       lambda d: d["ado"].__setitem__("project", "Other"),
+                       lambda d: d["ado"].__setitem__("assignedTo", "someone@example.com"),
+                       lambda d: d.__setitem__("project", "Another backlog")):
+            d = fresh()
+            bl.approve(d, "Ann", None)
+            change(d)
+            self.assertFalse(bl.is_approved(d["items"][1], d))
+
+    def test_item_override_shields_from_default_change(self):
+        d = fresh()
+        d["items"][1]["area"] = "Example\\Own"
+        bl.approve(d, "Ann", None)
+        d["ado"]["area"] = "Example\\Changed"
+        self.assertTrue(bl.is_approved(d["items"][1], d))
+        self.assertFalse(bl.is_approved(d["items"][2], d))
 
 
 class Approval(unittest.TestCase):
@@ -113,17 +133,17 @@ class Approval(unittest.TestCase):
         chosen = bl.approve(d, "Ann", ["S1", "F1"], "ok")
         self.assertEqual(chosen, ["S1", "F1"])
         by = {it["key"]: it for it in d["items"]}
-        self.assertTrue(bl.is_approved(by["S1"]))
-        self.assertFalse(bl.is_approved(by["S2"]))
+        self.assertTrue(bl.is_approved(by["S1"], d))
+        self.assertFalse(bl.is_approved(by["S2"], d))
         self.assertEqual(d["approvals"][-1]["scope"], "ids")
         by["S1"]["acceptanceCriteria"].append("one more")
-        self.assertFalse(bl.is_approved(by["S1"]))
+        self.assertFalse(bl.is_approved(by["S1"], d))
         self.assertEqual(bl.validate(d), [])
 
     def test_approve_all(self):
         d = fresh()
         bl.approve(d, "Ann", None)
-        self.assertTrue(all(bl.is_approved(it) for it in d["items"]))
+        self.assertTrue(all(bl.is_approved(it, d) for it in d["items"]))
         self.assertEqual(d["approvals"][0]["scope"], "all")
 
     def test_unknown_id_raises_and_changes_nothing(self):
@@ -187,7 +207,8 @@ class RenderAndFiles(unittest.TestCase):
             quiet.enter_context(contextlib.redirect_stderr(io.StringIO()))
             self.addCleanup(quiet.close)
             self.assertEqual(bl.main(["approve", str(p), "--by", "Ann", "--ids", "F1,S1"]), 0)
-            self.assertTrue(bl.is_approved(bl.load(p)["items"][1]))
+            loaded = bl.load(p)
+            self.assertTrue(bl.is_approved(loaded["items"][1], loaded))
             self.assertEqual(bl.main(["approve", str(p), "--by", "Ann", "--ids", "X"]), 2)
             self.assertEqual(bl.main(["render", str(p)]), 0)
             self.assertTrue((Path(t) / "b.md").is_file())
