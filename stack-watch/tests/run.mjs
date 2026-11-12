@@ -153,12 +153,15 @@ test("git submodules are scanned; worktrees are not", () => {
     "app/libs/sub/.nvmrc": "20\n",
     "app/libs/worktrees/w/.git": "gitdir: ../../../.git/modules/libs/worktrees/w\n",
     "app/libs/worktrees/w/.nvmrc": "21\n",
+    "app/x.git/worktrees/v/.git": "gitdir: ../../../.git/modules/x.git/worktrees/v\n",
+    "app/x.git/worktrees/v/.nvmrc": "22.1.0\n",
     "app-wt/.git": "gitdir: /x/app/.git/worktrees/app-wt\n",
     "app-wt/.nvmrc": "18\n",
   });
   const out = run(["scan", root], { roots: [root] }).stdout;
   assert.match(out, /app\/libs\/sub\/\.nvmrc:1` \.nvmrc `20` — Node\.js 20 is EOL/);
   assert.match(out, /libs\/worktrees\/w\/\.nvmrc:1` \.nvmrc `21`/, "submodule under a 'worktrees' path");
+  assert.match(out, /x\.git\/worktrees\/v\/\.nvmrc:1` \.nvmrc `22\.1\.0`/, "'.git' must start a path segment");
   assert.doesNotMatch(out, /app-wt/);
 });
 
