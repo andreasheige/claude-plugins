@@ -1,0 +1,10 @@
+{
+  "name": "skills",
+  "displayName": "Skills",
+  "version": "0.1.0",
+  "description": "Standalone agent skills. First: prototype-to-backlog (prototype -> refined user stories -> approval -> idempotent publish to Azure DevOps).",
+  "author": {
+    "name": "Andreas Heige"
+  },
+  "license": "MIT"
+}
