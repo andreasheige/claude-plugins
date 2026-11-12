@@ -41,6 +41,12 @@
       "source": "./stack-watch",
       "description": "Daily check of your projects' runtimes, frameworks and dependencies: EOL/behind-LTS (anything endoflife.date tracks), lockfile CVEs via osv-scanner, Node.js security advisories. Harness-neutral skill; schedule on macOS, Linux and Windows.",
       "category": "security"
+    },
+    {
+      "name": "skills",
+      "source": "./skills",
+      "description": "Standalone agent skills. prototype-to-backlog: turn a prototype into a refined backlog with persona agents, approve it, publish it to Azure DevOps without duplicates.",
+      "category": "workflow"
     }
   ]
 }
