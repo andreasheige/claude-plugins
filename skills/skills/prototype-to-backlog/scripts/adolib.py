@@ -50,6 +50,17 @@ def ids_path(project: str, org: str | None, ado_project: str | None) -> Path:
     return state_dir(project) / f"ids-{ident}.json"
 
 
+def load_ids(path: Path) -> dict[str, dict]:
+    """{key: {"id": int, "placed": bool | None}}. placed False = created but its state/column update has
+    not succeeded yet; None = unknown (found by tag, no record)."""
+    if not Path(path).is_file():
+        return {}
+    out = {}
+    for k, v in read_json(path).items():
+        out[k] = {"id": int(v), "placed": None} if isinstance(v, int) else {"id": int(v["id"]), "placed": v.get("placed")}
+    return out
+
+
 def has_tag(tags: str | None, tag: str) -> bool:
     """Exact tag match in an ADO System.Tags value ('a; b; c')."""
     return tag in [t.strip() for t in (tags or "").split(";")]

@@ -110,7 +110,9 @@ class Publisher:
         self.data, self.az, self.apply, self.ids_path, self.out = data, az, apply, ids_path, out
         self.project = data["project"]
         self.ado = data.get("ado") or {}
-        self.ids: dict[str, int] = adolib.read_json(ids_path) if ids_path.is_file() else {}
+        loaded = adolib.load_ids(ids_path)
+        self.ids: dict[str, int] = {k: v["id"] for k, v in loaded.items()}
+        self.placed: dict[str, bool | None] = {k: v["placed"] for k, v in loaded.items()}
         self.effort = effort or {}
         self.board: dict = {"columns": [], "columnField": None}
         self.planned: dict[str, str] = {}  # key -> "#id" or "(new)"
@@ -169,6 +171,7 @@ class Publisher:
             return int(wid)
         self.out(f"{key}: cached #{wid} {why}; ignoring it")
         del self.ids[key]
+        self.placed.pop(key, None)
         return None
 
     def find_existing(self, it: dict) -> int | None:
@@ -187,7 +190,7 @@ class Publisher:
 
     def save_ids(self) -> None:
         if self.apply:
-            adolib.write_json(self.ids_path, self.ids)
+            adolib.write_json(self.ids_path, {k: {"id": v, "placed": self.placed.get(k)} for k, v in self.ids.items()})
 
     def resolve(self, ref: str) -> int | None:
         if ref.startswith("#"):
@@ -213,13 +216,27 @@ class Publisher:
         w = self._az(*args, project=True)
         wid = int(w["id"])
         self.ids[it["key"]] = wid
+        self.placed[it["key"]] = False  # until place_item succeeds; a re-run resumes it
         self.save_ids()  # after every create: a crash never loses an id
         self.out(f"{it['key']}: created #{wid} {it['type']} \"{it['title']}\"")
         return wid
 
+    def needs_placement(self, it: dict, wid: int) -> bool:
+        """For an item that already exists: place it only if its placement never completed.
+        placed False: the create succeeded but the update did not. Unknown (found by tag): only if it
+        still sits in New, so an item the team has moved on is never reset."""
+        st = self.placed.get(it["key"])
+        if st is not None:
+            return not st
+        if it.get("state", "New") == "New" and not it.get("column"):
+            return False
+        w = self._az("boards", "work-item", "show", "--id", str(wid), check=False) if self.online else None
+        return ((w or {}).get("fields") or {}).get("System.State") == "New"
+
     def place_item(self, it: dict, wid: int | None) -> None:
         state, column = it.get("state", "New"), it.get("column")
         if state == "New" and not column:
+            self.mark_placed(it)
             return
         args = ["boards", "work-item", "update", "--id", str(wid), "--state", state]
         if column and self.board["columnField"]:
@@ -228,7 +245,13 @@ class Publisher:
             self.out(f"{it['key']}: would set state {state}" + (f", column {column}" if column else ""))
             return
         self._az(*args)
+        self.mark_placed(it)
         self.out(f"{it['key']}: state {state}" + (f", column {column}" if column else ""))
+
+    def mark_placed(self, it: dict) -> None:
+        if self.apply and it["key"] in self.ids:
+            self.placed[it["key"]] = True
+            self.save_ids()
 
     def link(self, it: dict, wid: int | None) -> None:
         wanted = []
@@ -285,6 +308,10 @@ class Publisher:
                 reused += 1
                 self.ids[it["key"]] = wid
                 self.out(f"{it['key']}: exists as #{wid}, not created again")
+                if self.needs_placement(it, wid):
+                    self.place_item(it, wid)
+                elif self.placed.get(it["key"]) is None:
+                    self.mark_placed(it)
                 if self.effort.get(it["key"]) and self.online:
                     self.update_effort(it, wid)
             else:

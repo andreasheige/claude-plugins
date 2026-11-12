@@ -42,7 +42,7 @@ def main(argv=None) -> int:
     if not ids_path.is_file():
         print(f"no ids file at {ids_path}: publish first", file=sys.stderr)
         return 2
-    ids = adolib.read_json(ids_path)
+    ids = {k: v["id"] for k, v in adolib.load_ids(ids_path).items()}
     az = adolib.Az()
     if not az.available:
         print("az is not installed. Run scripts/ado_login.py first.", file=sys.stderr)
