@@ -6,8 +6,9 @@
   python ado_publish.py <backlog.json> --apply --effort mapping.json   # add the effort line
 
 Idempotent. Each item carries a tag derived from project + key (backlog.idempotency_tag). Before
-creating, publish looks in the ids file (~/.prototype-to-backlog/<project>/ids.json) and then in ADO
-for that tag; an item found either way is reused, never created again. The ids file is written after
+creating, publish looks in the ids file (~/.prototype-to-backlog/<project>/ids-<hash>.json, one per
+backlog and destination; a cached id is used only if that item carries the tag) and then in ADO for
+the tag; an item found either way is reused, never created again. The ids file is written after
 every create, so an interrupted run resumes cleanly.
 
 Only items whose approval hash matches their current content are published. States are placed on
@@ -147,18 +148,34 @@ class Publisher:
                 errs.append(f"{it['key']}: the board's column field is unknown, cannot set column")
         return errs
 
+    def verify_cached(self, key: str) -> int | None:
+        """The id cached for key, only if that work item still exists, is not Removed, carries this
+        backlog's exact idempotency tag and lives in the target project. Otherwise forget it."""
+        wid = self.ids.get(key)
+        if wid is None or not self.online:
+            return wid
+        w = self._az("boards", "work-item", "show", "--id", str(wid), check=False)
+        f = (w or {}).get("fields") or {}
+        tag = bl.idempotency_tag(self.project, key)
+        if not w:
+            why = "is gone"
+        elif f.get("System.State") == "Removed":
+            why = "is Removed"
+        elif not adolib.has_tag(f.get("System.Tags"), tag):
+            why = f"does not carry {tag} (not this backlog's item)"
+        elif self.ado.get("project") and f.get("System.TeamProject") not in (None, self.ado["project"]):
+            why = f"is in project {f.get('System.TeamProject')!r}, not {self.ado['project']!r}"
+        else:
+            return int(wid)
+        self.out(f"{key}: cached #{wid} {why}; ignoring it")
+        del self.ids[key]
+        return None
+
     def find_existing(self, it: dict) -> int | None:
         key = it["key"]
-        if key in self.ids and self.online:
-            w = self._az("boards", "work-item", "show", "--id", str(self.ids[key]), check=False)
-            if w and (w.get("fields") or {}).get("System.State") != "Removed":
-                return int(w["id"])
-            self.out(f"{key}: #{self.ids[key]} in the ids file is gone or Removed, looking up by tag")
-            del self.ids[key]
-        elif key in self.ids:
-            return int(self.ids[key])
-        if not self.online:
-            return None
+        wid = self.verify_cached(key)
+        if wid is not None or not self.online:
+            return wid
         tag = bl.idempotency_tag(self.project, key)
         wiql = ("SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project "
                 f"AND [System.Tags] CONTAINS '{tag}' AND [System.State] <> 'Removed'")
@@ -244,8 +261,10 @@ class Publisher:
         if not items:
             self.out("nothing approved to publish")
             return 1
-        missing = [f"{it['key']} -> {r}" for it in items for r in bl.refs(it)
-                   if not r.startswith("#") and r not in {i['key'] for i in items} and r not in self.ids]
+        keys = {i["key"] for i in items}
+        earlier = {r for it in items for r in bl.refs(it) if not r.startswith("#") and r not in keys}
+        verified = {r for r in earlier if self.verify_cached(r) is not None}
+        missing = [f"{it['key']} -> {r}" for it in items for r in bl.refs(it) if r in earlier - verified]
         if missing:
             self.out("refused: these items point at items that are neither approved now nor published before: "
                      + ", ".join(missing))
@@ -308,7 +327,7 @@ def main(argv=None) -> int:
     ap.add_argument("--apply", action="store_true", help="write to ADO (default: dry run)")
     ap.add_argument("--offline", action="store_true", help="dry run without calling az at all")
     ap.add_argument("--effort", type=Path, metavar="MAPPING", help="add the effort line (see effort.py)")
-    ap.add_argument("--ids-file", type=Path, help="override ~/.prototype-to-backlog/<project>/ids.json")
+    ap.add_argument("--ids-file", type=Path, help="override ~/.prototype-to-backlog/<project>/ids-<hash>.json")
     a = ap.parse_args(argv)
     if a.apply and a.offline:
         ap.error("--apply needs ADO; drop --offline")
@@ -330,7 +349,8 @@ def main(argv=None) -> int:
                 return 3
             print("az not found: offline dry run (no ADO reads). Run scripts/ado_login.py to check against ADO.")
             az = None
-    ids_path = a.ids_file or adolib.state_dir(data["project"]) / "ids.json"
+    ado = data.get("ado") or {}
+    ids_path = a.ids_file or adolib.ids_path(data["project"], ado.get("organization"), ado.get("project"))
     try:
         eff = effort_lines(a.effort) if a.effort else {}
         return Publisher(data, az, a.apply, ids_path, eff).run()

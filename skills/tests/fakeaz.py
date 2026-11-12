@@ -52,6 +52,8 @@ class FakeAz:
             self.next_id += 1
             fields = {"System.Title": opt(a, "--title"), "System.WorkItemType": opt(a, "--type"),
                       "System.State": "New"}
+            if "--project" in a:
+                fields["System.TeamProject"] = opt(a, "--project")
             for f in opts_after(a, "--fields"):
                 k, v = f.split("=", 1)
                 fields[k] = v

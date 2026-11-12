@@ -33,10 +33,15 @@ hand. So publish never creates before it has looked:
 
 1. The tag `ptb-<10 hex>` = sha256(project + key). It depends on the item **key**, not the title, so
    refinement can rename a story freely. Never renumber keys once a backlog has been published.
-2. The ids file `~/.prototype-to-backlog/<project slug>/ids.json` (`{key: id}`), written after every
-   single create, so an interrupted run resumes without duplicates.
-3. For each approved item: ids file -> `work-item show` (gone or Removed: forget it) -> WIQL query
-   for the tag (excluding Removed) -> only then create. More than one hit is reported; the lowest id is used.
+2. The ids file `~/.prototype-to-backlog/<project slug>/ids-<hash>.json`, one per backlog and
+   destination (the hash covers the exact backlog project name, organization and ADO project), written
+   after every single create, so an interrupted run resumes without duplicates.
+3. For each approved item: ids file -> `work-item show`; the cached id is used only if the item exists,
+   is not Removed, carries this item's exact tag and is in the target project (otherwise forget it) ->
+   WIQL query for the tag (excluding Removed) -> only then create. More than one hit is reported; the
+   lowest id is used. Ids of earlier-published items that links point at are verified the same way.
+   Sync refuses an id whose item does not carry the tag. The mapping's `ado` block must name the same
+   organization/project as the backlog, so both find the same ids file.
 
 Re-running publish is safe: existing items are reported as `exists as #id` and not touched (except the
 effort line with `--effort`, and missing links).

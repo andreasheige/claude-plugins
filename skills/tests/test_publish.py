@@ -89,6 +89,27 @@ class Publish(unittest.TestCase):
         for c in invokes:
             self.assertEqual(c[c.index("--org") + 1], "https://dev.azure.com/example-org")
 
+    def test_cached_id_without_this_backlogs_tag_is_not_reused(self):
+        # Another backlog's item (different tag) sits at the cached id: never reuse or modify it.
+        self.fake.items[555] = {"id": 555, "relations": [], "fields": {
+            "System.Title": "foreign", "System.State": "Active", "System.Tags": "ptb-0000000000",
+            "System.TeamProject": "Example", "System.WorkItemType": "User Story"}}
+        self.ids.parent.mkdir(parents=True)
+        self.ids.write_text(json.dumps({"S1": 555}), encoding="utf-8")
+        r = Run(approved(), self.fake, self.ids, apply=True)
+        self.assertEqual(r.rc, 0, r.text)
+        self.assertIn("S1: cached #555 does not carry", r.text)
+        self.assertEqual(self.fake.items[555]["relations"], [])
+        self.assertEqual(self.fake.items[555]["fields"]["System.State"], "Active")
+        self.assertNotEqual(json.loads(self.ids.read_text(encoding="utf-8"))["S1"], 555)
+
+    def test_backlogs_with_alike_names_get_separate_ids_files(self):
+        a = adolib.ids_path("Demo / Web", "https://dev.azure.com/o", "P")
+        b = adolib.ids_path("Demo-Web", "https://dev.azure.com/o", "P")
+        c = adolib.ids_path("Demo / Web", "https://dev.azure.com/o", "Q")
+        self.assertEqual(a.parent, b.parent)
+        self.assertEqual(len({a, b, c}), 3)
+
     def test_second_apply_creates_nothing(self):
         Run(approved(), self.fake, self.ids, apply=True)
         before = len(self.fake.items)
@@ -110,7 +131,7 @@ class Publish(unittest.TestCase):
         Run(approved(), self.fake, self.ids, apply=True)
         self.fake.items[1001]["fields"]["System.State"] = "Removed"
         r = Run(approved(), self.fake, self.ids, apply=True)
-        self.assertIn("gone or Removed", r.text)
+        self.assertIn("S1: cached #1001 is Removed", r.text)
         self.assertEqual(json.loads(self.ids.read_text(encoding="utf-8"))["S1"], 1004)
 
     def test_only_approved_items_and_edits_void(self):
@@ -210,6 +231,14 @@ class SyncAndLogin(unittest.TestCase):
             self.assertEqual(fake.items[1001]["fields"]["System.State"], "Active")
             self.assertEqual(fake.items[1001]["fields"]["System.BoardColumn"], "In development")
             self.assertEqual(fake.items[1002]["fields"]["System.BoardColumn"], "Test/Design review")
+            # An id in the ids file whose item lacks this backlog's tag is refused, not updated.
+            fake.items[1001]["fields"]["System.Tags"] = "ptb-0000000000"
+            fake.items[1001]["fields"]["System.State"] = "New"
+            out = io.StringIO()
+            with mock.patch.object(ado_sync_state.adolib, "Az", make), contextlib.redirect_stdout(out):
+                self.assertEqual(ado_sync_state.main(args + ["--apply"]), 2)
+            self.assertIn("not this backlog's item", out.getvalue())
+            self.assertEqual(fake.items[1001]["fields"]["System.State"], "New")
 
     def test_login_without_az_prints_installer_and_exits_4(self):
         import ado_login

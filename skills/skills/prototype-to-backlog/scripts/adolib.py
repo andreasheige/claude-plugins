@@ -5,6 +5,7 @@ with an argument list, never a shell string. Tokens stay in az's own cache: noth
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -36,6 +37,22 @@ def project_slug(name: str) -> str:
 def state_dir(project: str) -> Path:
     """Where a project's ids file and drafts live. Created on first write, not here (dry runs write nothing)."""
     return STATE_ROOT / project_slug(project)
+
+
+def ids_path(project: str, org: str | None, ado_project: str | None) -> Path:
+    """The ids file for one backlog in one ADO destination.
+
+    The folder is readable (slug); the file name hashes the exact backlog project name plus the
+    organization and ADO project, so two backlogs whose names slug alike, or one backlog published to
+    two destinations, never share ids.
+    """
+    ident = hashlib.sha256(f"{project}\n{org or ''}\n{ado_project or ''}".encode("utf-8")).hexdigest()[:10]
+    return state_dir(project) / f"ids-{ident}.json"
+
+
+def has_tag(tags: str | None, tag: str) -> bool:
+    """Exact tag match in an ADO System.Tags value ('a; b; c')."""
+    return tag in [t.strip() for t in (tags or "").split(";")]
 
 
 def read_json(path: Path):
