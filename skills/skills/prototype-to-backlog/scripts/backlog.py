@@ -26,7 +26,8 @@ TOP_KEYS = {"version", "project", "language", "source", "ado", "items", "approva
 ITEM_KEYS = {"key", "type", "title", "description", "acceptanceCriteria", "parent", "dependsOn", "related",
              "screenshots", "tags", "state", "column", "assignedTo", "area", "iteration", "storyPoints",
              "refinement", "approval"}
-# Fields that end up in ADO. The approval hash covers exactly these, so any edit after approval voids it.
+# Item fields that end up in ADO. The approval hash covers these plus inherited defaults and the
+# target (see effective), so any change after approval voids it.
 PUBLISHED = ("type", "title", "description", "acceptanceCriteria", "parent", "dependsOn", "related",
              "screenshots", "tags", "state", "column", "assignedTo", "area", "iteration", "storyPoints")
 FORBIDDEN_STATES = {"Closed", "Removed", "Done"}
@@ -181,15 +182,32 @@ def idempotency_tag(project: str, key: str) -> str:
     return f"ptb-{h}"
 
 
-def content_hash(it: dict) -> str:
+# Item fields that fall back to the backlog's `ado` block, and the publishing target.
+INHERITED = ("area", "iteration", "assignedTo")
+TARGET = ("organization", "project", "team", "board")
+
+
+def effective(it: dict, data: dict) -> dict:
+    """What publishing this item actually sends, and where: item fields with inherited defaults
+    resolved, the ADO target, and the item's identity (backlog project + key)."""
+    ado = data.get("ado") or {}
     body = {f: it.get(f) for f in PUBLISHED}
-    canon = json.dumps(body, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    for f in INHERITED:
+        body[f] = it.get(f) or ado.get(f)
+    body["_target"] = {t: ado.get(t) for t in TARGET}
+    body["_identity"] = {"project": data.get("project"), "key": it.get("key")}
+    return body
+
+
+def content_hash(it: dict, data: dict) -> str:
+    """Hash of the effective payload. Changing the item, an inherited default or the target voids approval."""
+    canon = json.dumps(effective(it, data), sort_keys=True, ensure_ascii=False, separators=(",", ":"))
     return hashlib.sha256(canon.encode("utf-8")).hexdigest()[:16]
 
 
-def is_approved(it: dict) -> bool:
+def is_approved(it: dict, data: dict) -> bool:
     a = it.get("approval") or {}
-    return bool(a.get("hash")) and a["hash"] == content_hash(it)
+    return bool(a.get("hash")) and a["hash"] == content_hash(it, data)
 
 
 def approve(data: dict, by: str, ids: list[str] | None, note: str = "", now: dt.datetime | None = None) -> list[str]:
@@ -202,7 +220,7 @@ def approve(data: dict, by: str, ids: list[str] | None, note: str = "", now: dt.
     chosen = list(known) if ids is None else ids
     at = (now or dt.datetime.now(dt.timezone.utc)).isoformat(timespec="seconds")
     for k in chosen:
-        known[k]["approval"] = {"at": at, "by": by, "hash": content_hash(known[k])}
+        known[k]["approval"] = {"at": at, "by": by, "hash": content_hash(known[k], data)}
     entry = {"at": at, "by": by, "scope": "all" if ids is None else "ids", "ids": chosen}
     if note:
         entry["note"] = note
@@ -262,11 +280,11 @@ def render_markdown(data: dict) -> str:
     ado = data.get("ado") or {}
     if ado:
         lines += ["Target: " + " · ".join(f"{k} `{v}`" for k, v in ado.items()), ""]
-    approved = sum(1 for it in data["items"] if is_approved(it))
+    approved = sum(1 for it in data["items"] if is_approved(it, data))
     lines += [f"{len(data['items'])} items, {approved} approved.",
               "", "To approve, answer with **all**, a list of keys (e.g. `S1, S3`), or the edits you want first.", ""]
     for it in data["items"]:
-        mark = "approved" if is_approved(it) else ("edited after approval" if it.get("approval") else "not approved")
+        mark = "approved" if is_approved(it, data) else ("edited after approval" if it.get("approval") else "not approved")
         lines.append(f"## {it['key']} · {it['type']}: {it['title']}  ({mark})")
         meta = []
         for f, label in (("parent", "parent"), ("dependsOn", "depends on"), ("related", "related"),
@@ -352,7 +370,7 @@ def main(argv=None) -> int:
         return 0
     # status
     for it in data["items"]:
-        st = "approved" if is_approved(it) else ("EDITED after approval" if it.get("approval") else "not approved")
+        st = "approved" if is_approved(it, data) else ("EDITED after approval" if it.get("approval") else "not approved")
         print(f"{it['key']:<10} {it['type']:<11} {st:<22} {it['title']}")
     return 0
 
