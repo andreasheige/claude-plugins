@@ -192,13 +192,14 @@ export function judge(spec, product, day, ctx = {}) {
 
 // ---------- project scan: version declarations ----------
 
-// A git worktree (`.git` is a file) duplicates its main checkout; skip it.
-const isWorktree = (dir) => { try { return fs.statSync(path.join(dir, ".git")).isFile(); } catch { return false; } };
+// A linked git worktree duplicates its main checkout; skip it. Submodules also have a `.git` file
+// ("gitdir: ../.git/modules/x") but are real code, so only a gitdir under `/worktrees/` counts.
+const isWorktree = (dir) => /^gitdir:.*[\\/]worktrees[\\/]/m.test(readText(path.join(dir, ".git")) || "");
 
 function* walk(dir, depth, cfg) {
   let ents;
   try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
-  if (depth > 0 && ents.some((e) => e.name === ".git" && e.isFile())) return;
+  if (depth > 0 && ents.some((e) => e.name === ".git" && e.isFile()) && isWorktree(dir)) return;
   yield [dir, ents];
   if (depth >= cfg.maxDepth) return;
   for (const e of ents)
@@ -347,7 +348,7 @@ function scanDeclarations(roots, cfg, data) {
 
 function osvRun(roots, cfg) {
   const fake = ENV("DATA_DIR") && path.join(ENV("DATA_DIR"), "osv.json");
-  if (fake) return { json: readJson(fake, null) };
+  if (fake && fs.existsSync(fake)) return { json: readJson(fake, null) };
   if (!cfg.osv) return { json: null };
   if (!has("osv-scanner")) return { json: null, missing: true };
   const existing = roots.filter((r) => fs.existsSync(r));
@@ -684,7 +685,7 @@ async function runAll(roots, { offline, prev = {} }) {
   }
   const local = localRuntimes(data);
   const nodeLts = newestLts(idx.byName.get("nodejs") || {}, day);
-  return { day, cfg, findings, vulns, malware, recommendations, osvNote, local, advisories: data.advisories, newLines, lines,
+  return { day, cfg, findings, vulns, malware, recommendations, osvNote, osvError: osv.error, local, advisories: data.advisories, newLines, lines,
     watch, nodeLts };
 }
 
@@ -695,6 +696,8 @@ async function cmdCheck(args) {
   let r;
   try { r = await runAll(config().roots, { offline: false, prev }); }
   catch (e) { console.error(`stack-watch: ${e.message}; retrying next run`); return; } // no stamp → retry
+  // A failed vulnerability scan must not clear yesterday's alert or count as today's check.
+  if (r.osvError) { console.error(`stack-watch: osv-scanner failed: ${r.osvError}; retrying next run`); return; }
   const report = render(r), alert = brief(r, prev);
   write(P.report, report);
   if (alert) write(P.alert, alert + "\n"); else fs.rmSync(P.alert, { force: true });
@@ -744,6 +747,7 @@ function cmdInstall() {
   const argv = runner();
   if (process.platform === "darwin") {
     const plist = path.join(HOME, "Library", "LaunchAgents", `${LABEL}.plist`);
+    fs.mkdirSync(STATE_DIR, { recursive: true }); // launchd won't create the StandardErrorPath directory
     const xml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
     // Hourly + at login; the daily stamp makes it run once a day and catch up after the machine was off.
     write(plist, `<?xml version="1.0" encoding="UTF-8"?>
